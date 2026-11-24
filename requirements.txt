@@ -1,1 +1,2 @@
 aiohttp==3.14.5
+Telethon==1.43.2

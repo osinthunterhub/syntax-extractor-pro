@@ -1,9 +1,3 @@
-Syntax Extractor Pro v0.3.0-dev
-........................................................................ [ 55%]
-..........................................................               [100%]
-130 passed in 0.27s
-Production app pyflakes: PASS
-GitHub CI45350989017: Python3.12 SUCCESS; Python3.13 SUCCESS.
-Render release dep-dc2k3b3ncjis73d7cqbg: LIVE web process.
-HTTP health200/readiness503 verified; Telegram429, not active.
-Provider requests/UI actions use mock tests; no live export/channel test.
+v0.3.1 local:159 tests PASS1.30s Python3.13; app pyflakes clean.
+Live isolated bot-only authorization/get_me matched expected new bot ID/username/is_bot on DC5.
+CI and Render transport integration pending. No live provider export/channel-delivery test.

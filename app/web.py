@@ -13,7 +13,7 @@ from .jobs import Jobs
 from .telegram import Telegram, verified_identity
 from .ui import callback_command, render_panel, provider_panel
 
-HELP = '''Syntax Extractor Pro — v0.3.0-dev, mock-tested; live verification pending.
+HELP = '''Syntax Extractor Pro — v0.3.1-dev, mock-tested; live verification pending.
 AppX and Classplus have separate account connections.
 /start or /xtract — home
 /login — account panel
@@ -272,15 +272,22 @@ class Bot:
 def create_app(config, bot, runtime=None):
     runtime = runtime if runtime is not None else {'ready': True, 'identity_verified': False, 'webhook_configured': False, 'startup': 'test-harness'}
     app = web.Application(client_max_size=65536)
+    def readiness():
+        current = dict(runtime)
+        if current.get('transport') == 'mtproto-bot' and current['ready'] and not bot.tg.connected:
+            current['ready'] = False
+            current['startup'] = 'TELEGRAM_TRANSPORT_DISCONNECTED'
+        return current
     async def health(request):
-        return web.json_response({'service': 'independent-extractor', 'version': '0.3.0-dev', 'status': 'process-alive', 'providers': {'appx': 'limited-test-mvp' if config.appx_hosts else 'disabled-no-approved-host', 'classplus': 'mock-tested-live-unverified'}, 'persistent_jobs': False, **runtime})
+        return web.json_response({'service': 'independent-extractor', 'version': '0.3.1-dev', 'status': 'process-alive', 'providers': {'appx': 'limited-test-mvp' if config.appx_hosts else 'disabled-no-approved-host', 'classplus': 'mock-tested-live-unverified'}, 'persistent_jobs': False, **readiness()})
     async def ready(request):
-        return web.json_response(dict(runtime), status=200 if runtime['ready'] else 503)
+        current = readiness()
+        return web.json_response(current, status=200 if current['ready'] else 503)
     async def webhook(request):
         supplied = request.headers.get('X-Telegram-Bot-Api-Secret-Token', '')
         if not re.fullmatch(r'[A-Za-z0-9_-]{32,128}', supplied) or not hmac.compare_digest(supplied, config.webhook_secret):
             raise web.HTTPUnauthorized()
-        if not runtime['ready']:
+        if not runtime['ready'] or runtime.get('transport') == 'mtproto-bot':
             raise web.HTTPServiceUnavailable(headers={'Retry-After': '30'})
         try:
             update = await request.json()
@@ -303,10 +310,22 @@ def create_app(config, bot, runtime=None):
 
 async def bootstrap_bot(config, tg, bot, runtime):
     try:
+        if config.transport == 'mtproto':
+            await tg.connect()
         me = await verified_identity(tg, config.expected_username)
+        if config.transport == 'mtproto' and me['id'] != int(config.bot_token.split(':', 1)[0]):
+            raise ProviderError('BOT_SESSION_ID_MISMATCH_NO_ACTIONS')
         bot.destinations.bot_id = me['id']
         runtime['identity_verified'] = True
-        if config.set_webhook:
+        if config.transport == 'mtproto':
+            confirmed = await tg.call('setMyCommands', {
+                'commands': [{'command': name, 'description': description} for name, description in COMMANDS]})
+            if confirmed is not True:
+                raise ProviderError('TELEGRAM_COMMANDS_NOT_CONFIRMED')
+            tg.start_receiving(bot)
+            runtime['transport'] = 'mtproto-bot'
+            runtime['updates_configured'] = True
+        elif config.set_webhook:
             confirmed = await tg.call('setWebhook', {
                 'url': config.public_url + '/telegram/webhook',
                 'secret_token': config.webhook_secret,
@@ -321,7 +340,10 @@ async def bootstrap_bot(config, tg, bot, runtime):
                 raise ProviderError('TELEGRAM_COMMANDS_NOT_CONFIRMED')
         bot.start()
         runtime['ready'] = True
-        runtime['startup'] = 'verified' if config.set_webhook else 'verified-webhook-disabled'
+        runtime['startup'] = ('verified-mtproto-bot' if config.transport == 'mtproto' else
+                              'verified' if config.set_webhook else 'verified-webhook-disabled')
+        if config.transport == 'mtproto' and config.owner_ready_notice and config.owner_id:
+            await tg.owner_notice()
     except asyncio.CancelledError:
         raise
     except ProviderError as exc:
@@ -340,11 +362,16 @@ async def application():
     session = aiohttp.ClientSession(connector=connector, cookie_jar=aiohttp.DummyCookieJar(), trust_env=False)
     bot = None
     try:
-        tg = Telegram(session, config.bot_token)
+        runtime = {'ready': False, 'identity_verified': False, 'webhook_configured': False,
+                   'updates_configured': False, 'startup': 'identity-check-pending',
+                   'transport': 'mtproto-bot' if config.transport == 'mtproto' else 'botapi-webhook'}
+        if config.transport == 'mtproto':
+            from .mtproto import MTProtoTelegram
+            tg = MTProtoTelegram(config, runtime)
+        else:
+            tg = Telegram(session, config.bot_token)
         providers = {'appx': AppX(session, config.appx_hosts), 'classplus': Classplus(session)}
         bot = Bot(config, tg, providers, 0)
-        runtime = {'ready': False, 'identity_verified': False,
-                   'webhook_configured': False, 'startup': 'identity-check-pending'}
         app = create_app(config, bot, runtime)
         startup_task = None
         async def startup(_):
@@ -355,6 +382,8 @@ async def application():
                 startup_task.cancel()
                 await asyncio.gather(startup_task, return_exceptions=True)
             await bot.close()
+            if config.transport == 'mtproto':
+                await tg.close()
             await session.close()
             await resolver.close()
         app.on_startup.append(startup)

@@ -16,6 +16,11 @@ class Config:
     port: int = 10000
     set_webhook: bool = False
     owner_id: int = 0
+    transport: str = 'botapi'
+    telegram_api_id: int = field(default=0, repr=False)
+    telegram_api_hash: str = field(default='', repr=False)
+    mtproto_session: str = field(default='', repr=False)
+    owner_ready_notice: bool = False
 
     @classmethod
     def from_env(cls, env=None):
@@ -52,4 +57,18 @@ class Config:
             raise ConfigError('OWNER_ID must be a numeric Telegram user ID.') from None
         if owner < 0:
             raise ConfigError('OWNER_ID cannot be negative.')
-        return cls(token, secret, url, username, hosts, port, e.get('SET_WEBHOOK', 'false').lower() == 'true', owner)
+        transport = e.get('TELEGRAM_TRANSPORT', 'botapi').strip().lower()
+        if transport not in ('botapi', 'mtproto'):
+            raise ConfigError('TELEGRAM_TRANSPORT must be botapi or mtproto.')
+        api_id, api_hash, bot_session = 0, '', ''
+        if transport == 'mtproto':
+            try:
+                api_id = int(e.get('TELEGRAM_API_ID', '0'))
+            except ValueError:
+                raise ConfigError('TELEGRAM_API_ID must be numeric.') from None
+            api_hash = e.get('TELEGRAM_API_HASH', '').strip()
+            bot_session = e.get('TELEGRAM_BOT_SESSION', '').strip()
+            if api_id <= 0 or not re.fullmatch(r'[a-fA-F0-9]{32}', api_hash) or not 100 <= len(bot_session) <= 2048:
+                raise ConfigError('Explicit authorized bot-only MTProto credentials/session required.')
+        return cls(token, secret, url, username, hosts, port, e.get('SET_WEBHOOK', 'false').lower() == 'true', owner,
+                   transport, api_id, api_hash, bot_session, e.get('OWNER_READY_NOTICE', 'false').lower() == 'true')

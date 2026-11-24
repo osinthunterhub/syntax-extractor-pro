@@ -1,6 +1,6 @@
-# Independent Extractor — v0.3.0-dev
+# Independent Extractor — v0.3.1-dev
 
-**Separate new project. AppX + Classplus adapters. 130 local/mock tests. Web service deployed; Telegram activation blocked,
+**Separate new project. AppX + Classplus adapters. 159 local/mock tests. Web service deployed; Telegram activation blocked,
 not a claim of A–Z parity, real provider compatibility or fastest performance.**
 
 The existing `@TurboForwarderPro_Bot`, its credentials, sessions, settings and hosting
@@ -111,7 +111,7 @@ python -m pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
-130 tests pass under local Python 3.13. Production module Pyflakes check is clean.
+159 tests pass under local Python 3.13. Production module Pyflakes check is clean.
 GitHub CI passed for Python 3.12 + 3.13 (130-test revision, run 45350989017).
 Render Python 3.12.12 build and HTTP liveness/auth/readiness were verified.
 Telegram identity and provider APIs remain unverified. `TEST-RESULTS.txt` records actual local
@@ -191,7 +191,7 @@ See DEPLOYMENT-STATUS.md for actual service/deploy/CI IDs.
 - No guessed provider mappings, hosts or login-free premium/unlock features.
 - Support links to the user's supplied public handle @SyntaxError_2. It is NOT an
   export destination. User-selected destination delivery remains separate.
--130 local/mock tests; Python3.12/3.13 CI passed. Web service deployed; Telegram activation blocked.
+-159 local/mock tests; Python3.12/3.13 CI passed. Web service deployed; Telegram activation blocked.
 
 Reference public profile https://t.me/pro_extractorbot was fetched. Its interactive
 bot was NOT driven or authenticated into. Menu content came from the user's seven
@@ -205,3 +205,42 @@ both SUCCESS,130 local tests PASS.
 Telegram startup still ends TELEGRAM_RATE_LIMITED_RETRY_AFTER_32:
 ready=false, identity_verified=false, webhook_configured=false, /readyz503.
 No Telegram-online claim; startup retries stopped. Provider exports still live-unverified.
+
+## v0.3.1 optional official MTProto bot transport
+
+Cloud Bot API cold-login symptoms match community reports in upstream issues:
+https://github.com/tdlib/telegram-bot-api/issues/1103
+https://github.com/tdlib/telegram-bot-api/issues/1110
+These are incident reports, not a maintainer-confirmed explanation for every bot.
+A bounded isolated test successfully verified THIS new bot directly on its working
+DC via official MTProto; no personal account/phone/OTP or old session was used.
+
+`TELEGRAM_TRANSPORT=mtproto` uses an explicitly provisioned, secret BOT-ONLY
+StringSession, Telegram API ID/hash and the existing new bot token. Startup validates
+both bot username/is_bot and token's numeric bot ID before any commands/handlers.
+Session/API credentials are never committed, returned in health or logged. Invalid,
+wrong-bot or personal sessions fail closed. No arbitrary RPC interface is exposed.
+
+New adapter maps existing menu editing, commands, callback acknowledgements, TXT
+uploads and channel/admin checks to the SAME bot's official MTProto methods.
+Readiness requires identity + active transport + installed incoming handlers.
+`webhook_configured=false` is intentional in MTProto mode; `updates_configured=true`
+identifies its inbound transport. HTTP webhook intake is disabled to avoid duplicates.
+
+**Run one instance only. Do not run local and hosted clients concurrently with the
+same session. Future MTProto deployments must use stop-first handoff to prevent
+simultaneous session use on different IPs.** Do not regenerate or log out the session
+as an attempted outage fix. Reconnection uses this bot's saved authorization only.
+No general user-account chat access or media-forwarding engine has been added.
+
+Public @channel targets resolve normally; private numeric IDs require Telegram to
+have supplied the entity/access-hash in this process. An unresolved channel fails
+explicitly; no guessed hash or DM fallback. Use the channel username when available.
+Incoming updates are RAM/bounded/best-effort; overflow may require resending a command.
+Optional OWNER_READY_NOTICE sends only to the configured owner after matching the
+public support handle to its numeric ID; inability to initiate a private chat does
+not falsely mark the bot unusable. Default false to avoid repeated startup notices.
+
+159 local tests pass, including transport-to-worker command/callback integration,
+wrong/personal-session rejection, live-socket readiness, permission checks, numeric
+ID normalization and overload/dedup. Real provider exports remain live-unverified.

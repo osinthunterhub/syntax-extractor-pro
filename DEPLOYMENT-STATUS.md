@@ -1,62 +1,47 @@
-# v0.4.0 — TOKEN + CLASSPLUS OTP / USER DASHBOARD / OWNER OVERVIEW LIVE
+# v0.5.0 — Telegram own-account linking and owner access controls LIVE
 
-Bot https://t.me/SyntaxExtractProBot ; same isolated new bot9049794072.
-Scope explicitly ONLY extractor; old forwarding bot untouched.
-User chose BOTH Classplus own-token and own mobile/provider-OTP login options.
-Deployed source 162d155134ee3e3f279a873db6c803bb2e805674
-Deploy dep-dc2lakcs728c73auom80: LIVE. FREE Singapore srv-dc2j83uc6qcc73f732fg.
-CI45363068720: Python3.12/3.13 SUCCESS;319synthetic regression tests PASS0.57s.
-Production app Pyflakes clean; diff whitespace clean.
-/readyz200, identity_verified=true, updates_configured=true, transport=mtproto-bot.
-Hosted feature flags confirmed: token=true,OTP=true,user_dashboard=true,
-owner_panel=true,priority_controls=true,display_cache_seconds20.
-Final saved env verified OTPenabled/unpaused/MTProto; owner8841527686 unchanged,
-owner notice false, auto-deploy OFF, service not suspended. No local bot-session use.
+Bot: https://t.me/SyntaxExtractProBot (9049794072).
+Scope ONLY this extractor. Old forwarding bot and its authorizations untouched.
+Deployed source: c6bd5e2dbe31d540d6bfe550190a148527b07a99
+Render deploy: dep-dc2lncbrjlhs73d40ir0 — LIVE. FREE / Singapore; auto-deploy OFF.
+CI: 45367396594 — both Python3.12 and3.13 SUCCESS. Local356 synthetic tests PASS.
+Hosted /readyz200; bot identity verified, MTProto socket ready, updates configured.
+Feature flags checked live: Telegram account link + bot-access consent + Classplus
+OTP/token + owner/user panels enabled. Owner8841527686 unchanged; AppX disabled.
+Authenticated stop-first handoff confirmed before deploying; old socket disconnected
+and no active jobs. No hosted bot StringSession connected from local tools.
 
-## Actual user-facing changes
-/cplogin or /cp: token OR existing Classplus org-code/mobile/OTP selection.
-/cptoken: own existing token. /cpotp: org -> own Indian number -> masked-number
-confirmation -> explicit Send OTP -> provider OTP -> account course list.
-No SMS auto-sent by choosing a method/phone input/startup. No auto-resend, no
-password/new-account fake registration.5-minute per-step expiry,3verify attempts,
-bounded request quotas/capacity, fixed official API origin, deadlines/response caps.
-OTP/phone/provider challenge only in process RAM; raw OTP/token never logged or
-copied to global/log channel. Telegram message deletion best-effort, NOT erasure.
+## What changed
+/start -> basic Telegram sender-ID consent -> own /dashboard. No extra Telegram
+login required for ordinary bot access. Optional /linktelegram opens private HTTPS
+FULL-session risk consent + native QR + optional two-step password. New RAM-only
+MemorySession per consenting user, own sender ID required, one-hour link lifetime.
+No old/personal/bot session imported. /tgstatus /mychannels /unlinktelegram and
+/logoutall implemented. /mychannels lists OWN public admin broadcast channels;
+selection still verifies user+BOT channel rights before exporting only there.
+Private channels not enumerated; /setdestination remains the manual target option.
 
-/dashboard for EVERY ordinary user: only their accounts, channel, job, setup stage.
-/admin or /stats: OWNER ONLY READ-ONLY aggregates/queue status and health controls.
-No broadcast/global user deletion/settings features are pretended or exposed.
-Command guide grouped/spaced. All registered command handlers exercised offline;
-owner denial, usage errors and disconnected status are legitimate expected routes.
-Inactive AppX hidden from public slash menu/main login; /appx reports setup status.
-Catalog and /free remain honest INFORMATION pages, not working extra providers.
+Owner /admin -> paged user registry, block/unblock buttons, maintenance controls;
+/users /ban /unban /maintenance commands also implemented. No credential viewing,
+no general Telegram account RPC/inbox/forwarding interface or session export.
+Bans/settings/links/quotas are RAM-only and reset on restart/deployment.
+Classplus own-token + own-mobile/OTP workflow is separate and retained.
+See TELEGRAM-LINK-v0.5.0-STATUS.md for exact limits/security/test scope.
 
-Performance fixes: bounded dedicated control queue/worker;4regular workers;
-per-user locks cleaned after use (no lifetime250-user lockout);20s display cache,
-explicit /refreshcourses;ALL up to500courses paged8at a time instead of long
-message/sleep bursts. Export always re-fetches account membership and destination
-rights; no cached authorization. Input deletion/callback ACK bounded2s. Login and
-course-list requests have deadlines. Late cancelled requests cannot restore login.
-Verified OTP token retained if course listing temporarily fails; user can refresh
-without requesting a second SMS. No network/SMS instant-speed claim.
+## Actual hosted portal checks
+GET /account-link200; full-session disclosure, CSP nonce, no-store, no-referrer,
+frame-ancestors none / X-Frame-Options DENY. Missing/wrong Origin403; missing/invalid
+link bearer400. These probes do NOT create an account link or authorize a user.
+355 initial offline cases plus privacy disclosure regression =356 tests; fake
+QR/2FA/login/authorization/race/channel clients only. Pyflakes+JS syntax+diff clean.
 
-## Verified vs NOT verified
-319 SYNTHETIC tests, including complete fake OTP->course->chosen-channel stub TXT,
-all command routes, owner isolation, rate/expiry/registration rejection, cache
-safety, cancel races,1000sequential users, independent queue capacity/dedup, control
-responses while4regular provider requests deliberately stall. NO real SMS sent.
-One deliberately nonexistent-org actual GET returned expected rejection using
-source-derived authApiVersion51; course API uses reference29. No valid user
-account/SMS/OTP success has been verified. Real course extraction and actual
-chosen-channel file delivery remain unverified. These are not implied by readiness.
-Current source details: LOGIN-DASHBOARD-v0.4.0-STATUS.md and command routing ledger.
-
-## Deployment and limitations
-CI-gated authenticated stop-first /ops/quiesce confirmed old socket disconnected,
-no active jobs, oldready503/quiescedtrue BEFORE new deploy. Same bot StringSession
-never connected concurrently/local, no reauthorization or logout.
-Free Render can sleep; MTProto updates do NOT HTTP-wake a sleeping instance.
-No24/7/permanent API compatibility/instant-SMS guarantee. RAM sessions, OTP setups,
-destinations/jobs/cache reset on deployment. User-selected channel must be set
-again, with user+bot admin checks; no DM fallback. AppX still disabled/no approved
-host. No paid changes, old bot/services untouched. No ZIP made/presented.
+## Explicit verification limits
+No actual user QR scan, Telegram two-step password acceptance, public-channel
+account enumeration or real chosen-channel TXT delivery has been performed.
+Classplus real valid-account SMS/OTP/course extraction/delivery remains UNVERIFIED.
+Hosted readiness and fake tests must not be described as those end-to-end proofs.
+Telegram user linking is FULL authorization: server operator can access sessions
+and transient 2FA. Use only a trusted deployment. Revoke the NEW authorization in
+Telegram Settings > Devices; crashes/network outages may prevent automatic revoke.
+RAM-only does not erase copies retained by Telegram. Free hosting can sleep;
+no24/7 or instant-provider guarantee. No paid changes or ZIP handoff.

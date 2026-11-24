@@ -268,7 +268,7 @@ when no approved coaching host exists. `/courses` includes paged selection butto
 for the full returned course list. Selection binds to your own current provider,
 expires in5 minutes, and rechecks entitlement and selected channel rights.
 
-202 synthetic tests pass (including both provider->channel mock workflows).
+204 synthetic tests pass (including both provider->channel mock workflows).
 This is not authenticated live provider certification. See PROVIDER-UPGRADE-v0.3.2.md
 for exact review scope, completed changes and remaining required live inputs.
 
@@ -280,3 +280,8 @@ socket without logOut, blocks updates, clears volatile user state. If deployment
 fails, an explicitly controlled restart/rollback is needed; quiesced old process
 will not reconnect itself. NEVER run the bot StringSession in local diagnostics
 while hosting is active. Never expose the secret header in logs or public URLs.
+
+Maintenance bootstrap uses TELEGRAM_START_PAUSED=true only for a temporary
+HTTP-only staged deployment. Final production must deploy with false so ordinary
+restarts do not require manual activation. Saved env edits alone do not change
+Render existing deployment snapshots.

@@ -1,4 +1,4 @@
-v0.3.2-dev:202 synthetic regression tests PASS0.54s; app pyflakes clean.
+v0.3.2-dev:204 synthetic regression tests PASS0.54s; app pyflakes clean.
 Two full provider setup->selected-channel workflows tested with stubs only.
 Classplus fixed official endpoint returned401 without credentials.
 Provider live authenticated course/export/channel checks NOT yet possible.

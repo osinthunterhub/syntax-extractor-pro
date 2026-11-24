@@ -21,6 +21,7 @@ class Config:
     telegram_api_hash: str = field(default='', repr=False)
     mtproto_session: str = field(default='', repr=False)
     owner_ready_notice: bool = False
+    startup_paused: bool = False
 
     @classmethod
     def from_env(cls, env=None):
@@ -71,4 +72,5 @@ class Config:
             if api_id <= 0 or not re.fullmatch(r'[a-fA-F0-9]{32}', api_hash) or not 100 <= len(bot_session) <= 2048:
                 raise ConfigError('Explicit authorized bot-only MTProto credentials/session required.')
         return cls(token, secret, url, username, hosts, port, e.get('SET_WEBHOOK', 'false').lower() == 'true', owner,
-                   transport, api_id, api_hash, bot_session, e.get('OWNER_READY_NOTICE', 'false').lower() == 'true')
+                   transport, api_id, api_hash, bot_session, e.get('OWNER_READY_NOTICE', 'false').lower() == 'true',
+                   e.get('TELEGRAM_START_PAUSED', 'false').lower() == 'true')

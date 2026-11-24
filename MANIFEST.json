@@ -2,8 +2,8 @@
   "version": "0.3.2-dev",
   "files": {
     ".env.example": {
-      "bytes": 765,
-      "sha256": "5e8192fd3546c82f89af8c74989443296b33d8734949dc2768c1ee0c82b5dc65"
+      "bytes": 870,
+      "sha256": "a611a065b71837f5c96d00bf680461af53bb05e6c477f558679fcfef34c36cb0"
     },
     ".github/workflows/tests.yml": {
       "bytes": 448,
@@ -22,12 +22,12 @@
       "sha256": "b43ba9b8a83029ed0029bab1123244965b21da91e77ae95be7ea6f2bb1500744"
     },
     "PROVIDER-UPGRADE-v0.3.2.md": {
-      "bytes": 4133,
-      "sha256": "1d0d00576f4ef62abcf016a53c4d69419c273b047cb0ec86e855c75d57982414"
+      "bytes": 4473,
+      "sha256": "9226671586a7c6a6f8ae93931e395681b25e1da49644c1f76a80879f063fa724"
     },
     "README.md": {
-      "bytes": 18052,
-      "sha256": "9ed6b26abdc515b8240f5fd271719feb3032e800d9f128df24797cd266153fc8"
+      "bytes": 18326,
+      "sha256": "3e288dbba03e0076c82e58488f64b50060e8c6af8344284fd66988fce5c8afdf"
     },
     "REFERENCE-COMMAND-INVENTORY.csv": {
       "bytes": 2894,
@@ -47,7 +47,7 @@
     },
     "TEST-RESULTS.txt": {
       "bytes": 360,
-      "sha256": "35e6bd5e2b09429025f9ff11d200954a562741c1aac76cdf0cabe1682b1ab4f8"
+      "sha256": "f30dcbda09f67c57ffa2669232b65babc4549398e42a35f2ab8400abb6451f70"
     },
     "app/__init__.py": {
       "bytes": 84,
@@ -70,8 +70,8 @@
       "sha256": "728b91fb8c247699d68f100cc3e951a4fc536be04d65e3ce8f58cf79b33f9b89"
     },
     "app/config.py": {
-      "bytes": 3939,
-      "sha256": "b07d423c0d9aad048fb748c6338bbe7b4146e351f8e16215a3f1459df3bf5852"
+      "bytes": 4050,
+      "sha256": "b8d917359799d0dd7823af804965102b507e79a0a25f22ccc38fe224209f8703"
     },
     "app/conversation.py": {
       "bytes": 4083,
@@ -110,8 +110,8 @@
       "sha256": "d33f88260b290b38260b3a483a42798a7fd66973a819833163a27d5ca32bcf47"
     },
     "app/web.py": {
-      "bytes": 26644,
-      "sha256": "0a8893cb2fceffc7ef4b09303ff49d0de0c94089271f0347568e5bc230107084"
+      "bytes": 26817,
+      "sha256": "474420e895540ef889026b582ffed4bd1914f397ad956d383dcc63444b3b2c96"
     },
     "render.yaml": {
       "bytes": 504,
@@ -134,8 +134,8 @@
       "sha256": "c2d442c2949e27c1a98abb4c605b0fa47afb4c8f13961e6950127d2ecd1e4225"
     },
     "tests/test_provider_setup.py": {
-      "bytes": 11097,
-      "sha256": "b2666be6cfcef16e889b5d4979ac2c7066f54f2c6e307b689f841993b0130fce"
+      "bytes": 12084,
+      "sha256": "249484273eef2f1395407d33b991a00cfe08e52c9d45dfe65c9121a109b7f96a"
     },
     "tests/test_ui.py": {
       "bytes": 8742,

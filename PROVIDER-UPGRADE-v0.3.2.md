@@ -36,10 +36,14 @@ This establishes reachability/auth rejection, NOT working authenticated exports.
   claiming complete output. Unknown schemas remain errors, never guessed.
 - Secret-authenticated /ops/quiesce enables stop-first MTProto deployments.
   Refuses active jobs; stops workers and socket; clears RAM state; idempotent.
-  This initial deployment requires a one-time safe bridge because old code lacks
-  this route. Never run one bot session from two machines at the same time.
+  This initial deployment requires a one-time TWO-DEPLOY safe bridge because old
+  code lacks this route: first deploy with TELEGRAM_START_PAUSED=true (binds HTTP
+  without opening Telegram); wait until old process is retired; final deployment
+  with TELEGRAM_START_PAUSED=false. Suspend/resume does NOT apply changed env
+  variables to old deployed snapshots, so that approach was stopped before any
+  overlapping-session deployment. Never run one bot session from two machines at the same time.
 
-202 synthetic regression tests PASS; production app pyflakes clean.
+204 synthetic regression tests PASS; production app pyflakes clean.
 Two full synthetic flows run setup -> courses -> selected course -> entitlement
 recheck -> queued traversal -> rights recheck -> selected-channel document.
 These use synthetic accounts/responses/Telegram stubs, NOT live paid accounts.

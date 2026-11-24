@@ -391,6 +391,9 @@ def create_app(config, bot, runtime=None):
     return app
 
 async def bootstrap_bot(config, tg, bot, runtime):
+    if config.startup_paused:
+        runtime['startup'] = 'MAINTENANCE_TELEGRAM_START_PAUSED'
+        return  # health binds, but no session connect/getMe/handlers/actions
     try:
         if config.transport == 'mtproto':
             await tg.connect()

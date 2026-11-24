@@ -236,3 +236,25 @@ def test_quiesce_requires_secret_stops_socket_and_rejects_new_updates():
             r = await client.post('/telegram/webhook', headers=headers, json=update('/start')); assert r.status == 503
             r = await client.post('/ops/quiesce', headers=headers); assert r.status == 200
     run(case())
+
+
+def test_maintenance_stage_never_connects_bot_session():
+    from dataclasses import replace
+    from app.web import bootstrap_bot
+    async def case():
+        class NeverConnect:
+            async def connect(self): raise AssertionError('must not connect')
+            async def call(self, *args): raise AssertionError('must not call Telegram')
+        c = replace(Config.from_env(env()), transport='mtproto', startup_paused=True)
+        runtime = {'ready': False, 'identity_verified': False, 'updates_configured': False}
+        b = Bot(c, NeverConnect(), FakeAppX())
+        await bootstrap_bot(c, b.tg, b, runtime)
+        assert runtime['startup'] == 'MAINTENANCE_TELEGRAM_START_PAUSED' and not b.workers
+        assert runtime['ready'] is False
+    run(case())
+
+
+def test_maintenance_env_is_explicit_opt_in_only():
+    assert Config.from_env(env()).startup_paused is False
+    e = env(); e['TELEGRAM_START_PAUSED'] = 'true'
+    assert Config.from_env(e).startup_paused is True

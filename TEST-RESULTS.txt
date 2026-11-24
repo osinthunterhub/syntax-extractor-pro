@@ -1,6 +1,5 @@
-v0.3.2-dev:204 synthetic regression tests PASS0.41s; app pyflakes clean.
-CI45358523496: Python3.12 and3.13 SUCCESS.
-Live final deploydep-dc2kt3e7bikc73909ipg: /readyz200, same-bot identity/handlers verified.
-Two full provider setup->selected-channel workflows use synthetic stubs only.
-Classplus official endpoint401 without credentials; AppX approved host absent.
-Live provider-account export/channel document certification still PENDING.
+v0.3.3-dev:235 synthetic regression tests PASS0.47s; production app Pyflakes clean.
+Classplus source-format compatibility, auth/locking and selected-channel stub flow tested.
+Actual adapter with synthetic INVALID token correctly reported ACCESS_DENIED.
+Live valid-account/course-export/channel-file verification remains unperformed.
+CI and runtime deploy evidence recorded separately after verification.

@@ -56,10 +56,12 @@ def test_cp_owned_list_and_export_skip_protected():
     run(case())
 
 
-def test_cp_missing_entitlement_schema_fails_closed():
+def test_cp_reference_account_list_does_not_require_invented_purchase_fields():
     async def case():
-        with pytest.raises(ProviderError, match='ENTITLEMENT_SCHEMA_UNVERIFIED'):
-            await CP(courses=[{'id': 7, 'name': 'Store listing not proof'}]).courses(cpconn())
+        p = CP(courses=[{'id': 7, 'name': 'Reference My Courses row'}])
+        courses = await p.courses(cpconn())
+        assert [c.id for c in courses] == ['7']
+        assert p.calls[0][2]['tabCategoryId'] == 1
     run(case())
 
 
@@ -75,7 +77,7 @@ def test_cp_unowned_course_cannot_traverse():
 def test_cp_pagination_supports_explicit_metadata():
     async def case():
         p = CP(pages={('0',0): {'data': {'courseContent': [{'id':1}], 'hasMore':True}},
-                      ('0',100): {'data': {'courseContent': [{'id':2}], 'hasMore':False}}})
+                      ('0',1): {'data': {'courseContent': [{'id':2}], 'hasMore':False}}})
         rows = await p.pages(cpconn(), 'content', {'folderId':'0'}, 'courseContent')
         assert [r['id'] for r in rows] == [1,2]
     run(case())
@@ -84,7 +86,7 @@ def test_cp_pagination_supports_explicit_metadata():
 def test_cp_repeated_pagination_rejected():
     async def case():
         value = {'data': {'courseContent': [{'id':1}], 'hasMore':True}}
-        p = CP(pages={('0',0): value, ('0',100):value})
+        p = CP(pages={('0',0): value, ('0',1):value})
         with pytest.raises(ProviderError, match='REPEATED'):
             await p.pages(cpconn(), 'content', {'folderId':'0'}, 'courseContent')
     run(case())

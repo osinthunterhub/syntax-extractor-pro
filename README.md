@@ -285,3 +285,13 @@ Maintenance bootstrap uses TELEGRAM_START_PAUSED=true only for a temporary
 HTTP-only staged deployment. Final production must deploy with false so ordinary
 restarts do not require manual activation. Saved env edits alone do not change
 Render existing deployment snapshots.
+
+## v0.3.3 Classplus-first correction (supersedes missing-flag blocker above)
+Send `/cp` in private chat to start own-existing-token setup. Successful connection
+immediately presents account courses. The reference's exact authenticated My Courses
+route no longer incorrectly requires undocumented per-row purchase flags; explicit
+denials and server authentication still apply. Same-user account-list membership
+is re-fetched on every export; no arbitrary-ID/store-catalog workflow. Api-Version29
+matches the pinned reference. This is source-compatible code, NOT a claim that a
+real user's live account/course/channel export was verified. See CLASSPLUS-v0.3.3-STATUS.md.
+235 synthetic regression tests pass. AppX untouched/out of this focused release.

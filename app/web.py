@@ -14,7 +14,7 @@ from .telegram import Telegram, verified_identity
 from .ui import callback_command, render_panel, provider_panel, Panel, button
 from .conversation import Conversations
 
-HELP = '''Syntax Extractor Pro — v0.3.2-dev. Telegram active; provider live tests pending.
+HELP = '''Syntax Extractor Pro — v0.3.3-dev. Telegram active; provider live tests pending.
 /connect — guided private account setup (own existing token; no password/OTP)
 AppX and Classplus have separate account connections.
 /start or /xtract — home
@@ -99,6 +99,23 @@ class Bot:
         if nav:
             rows.append(tuple(nav))
         await self.show_panel(cid, Panel(f'{provider}: course choices • {page + 1}/{pages}\nChoose a course, or /export COURSE_ID. Choices expire in5 minutes; entitlement and channel rights are rechecked before delivery.', tuple(rows)), message_id)
+
+    async def present_courses(self, uid, cid, selected, courses):
+        if not courses:
+            await self.tg.send(cid, 'No courses returned by your account.')
+            return
+        nonce = self.conversations.course_page(uid, selected, courses)
+        buf = f'{selected}: your account courses\n'
+        for course in courses:
+            row = f'{course.id} — {course.name}' + ('' if course.folder_mode else ' [flat course; schema-dependent]') + '\n'
+            if len(buf) + len(row) > 3200:
+                await self.tg.send(cid, buf)
+                buf = ''
+                await asyncio.sleep(1)
+            buf += row
+        if buf:
+            await self.tg.send(cid, buf)
+        await self.show_course_page(uid, cid, selected, nonce, 0)
 
     async def handle(self, update):
         callback = update.get('callback_query')
@@ -192,8 +209,12 @@ class Bot:
                     selected = 'appx' if cmd == '/appx' else 'classplus'
                     self.conversations.clear(uid)
                     self.selected[uid] = selected
-                    panel = provider_panel(selected, bool(self.config.appx_hosts), self.state.get(uid, selected) is not None)
+                    connected = self.state.get(uid, selected) is not None
+                    panel = provider_panel(selected, bool(self.config.appx_hosts), connected)
                     await self.show_panel(cid, panel, panel_message_id)
+                    if selected == 'classplus' and not connected and uid not in self.jobs.active:
+                        prompt = self.conversations.begin(uid, selected, self.config.appx_hosts)
+                        await self.tg.send(cid, prompt)
                 elif cmd == '/connect':
                     args = parts[1:]
                     if not args or len(args) == 1 and args[0].lower() in ('appx', 'classplus'):
@@ -229,6 +250,8 @@ class Bot:
                     self.state.put(uid, connection)
                     self.selected[uid] = selected
                     await self.tg.send(cid, f'{selected}: connected. {len(courses)} account courses returned. Token not logged. /courses')
+                    if selected == 'classplus':
+                        await self.present_courses(uid, cid, selected, courses)
                 elif cmd in ('/disconnect', '/logoutall'):
                     self.conversations.clear(uid)
                     self.jobs.cancel(uid)
@@ -264,21 +287,7 @@ class Bot:
                         raise ProviderError('CONNECT_SELECTED_PROVIDER_FIRST_SESSION_EXPIRED_OR_RESTARTED')
                     if cmd == '/courses':
                         courses = await self.router.adapter(selected).courses(connection)
-                        if not courses:
-                            await self.tg.send(cid, 'No courses returned by your account.')
-                            return
-                        nonce = self.conversations.course_page(uid, selected, courses)
-                        buf = f'{selected}: your account courses\n'
-                        for course in courses:
-                            row = f'{course.id} — {course.name}' + ('' if course.folder_mode else ' [flat course; schema-dependent]') + '\n'
-                            if len(buf) + len(row) > 3200:
-                                await self.tg.send(cid, buf)
-                                buf = ''
-                                await asyncio.sleep(1)
-                            buf += row
-                        if buf:
-                            await self.tg.send(cid, buf)
-                        await self.show_course_page(uid, cid, selected, nonce, 0)
+                        await self.present_courses(uid, cid, selected, courses)
                     else:
                         if len(parts) != 2 or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', parts[1]):
                             raise ProviderError('USE_EXPORT_COURSE_ID')
@@ -341,7 +350,7 @@ def create_app(config, bot, runtime=None):
             current['startup'] = 'TELEGRAM_TRANSPORT_DISCONNECTED'
         return current
     async def health(request):
-        return web.json_response({'service': 'independent-extractor', 'version': '0.3.2-dev', 'status': 'process-alive', 'providers': {'appx': 'limited-test-mvp' if config.appx_hosts else 'disabled-no-approved-host', 'classplus': 'mock-tested-live-unverified'}, 'persistent_jobs': False, **readiness()})
+        return web.json_response({'service': 'independent-extractor', 'version': '0.3.3-dev', 'status': 'process-alive', 'providers': {'appx': 'limited-test-mvp' if config.appx_hosts else 'disabled-no-approved-host', 'classplus': 'reference-compatible-live-account-unverified'}, 'persistent_jobs': False, **readiness()})
     async def ready(request):
         current = readiness()
         return web.json_response(current, status=200 if current['ready'] else 503)

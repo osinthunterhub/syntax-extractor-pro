@@ -1,5 +1,5 @@
 {
-  "version": "0.3.2-dev",
+  "version": "0.3.3-dev",
   "files": {
     ".env.example": {
       "bytes": 870,
@@ -17,6 +17,10 @@
       "bytes": 8,
       "sha256": "f01d748a75eb195e6fd73201279bfb23f09036ddd360eb3e9ff40ef042acbc8a"
     },
+    "CLASSPLUS-v0.3.3-STATUS.md": {
+      "bytes": 4186,
+      "sha256": "2e555fd65f79a154fcb3b6f0d4cc0ac08b323dc24a7af7dd43dca212ca0ee80f"
+    },
     "DEPLOYMENT-STATUS.md": {
       "bytes": 3220,
       "sha256": "482d91ae59c37277563308532d60a9c1daeaf48e846572a07435942aed190312"
@@ -26,8 +30,8 @@
       "sha256": "9226671586a7c6a6f8ae93931e395681b25e1da49644c1f76a80879f063fa724"
     },
     "README.md": {
-      "bytes": 18326,
-      "sha256": "3e288dbba03e0076c82e58488f64b50060e8c6af8344284fd66988fce5c8afdf"
+      "bytes": 19077,
+      "sha256": "ad82f0796378e7c3be7db4539f33996409a63d0ac48209803fa26d0b8a68d749"
     },
     "REFERENCE-COMMAND-INVENTORY.csv": {
       "bytes": 2894,
@@ -46,8 +50,8 @@
       "sha256": "bac73f2eb9fdd5b9d9a546a2b0d7f536c8c580b612b33bc7c8feba73585ebc34"
     },
     "TEST-RESULTS.txt": {
-      "bytes": 440,
-      "sha256": "f2c0734377669795679cb2cd0124eb47e5aee17b4a1173e33548b06358ea3387"
+      "bytes": 404,
+      "sha256": "70749c05a60f0a05caf7fab28d746e940927d47249f159662102149d2a16f9ce"
     },
     "app/__init__.py": {
       "bytes": 84,
@@ -66,8 +70,8 @@
       "sha256": "f1c64584deb7d044266c4a36ae67be9638f9e06fe8079aeb4469fadf9496f2c9"
     },
     "app/adapters/classplus.py": {
-      "bytes": 6596,
-      "sha256": "728b91fb8c247699d68f100cc3e951a4fc536be04d65e3ce8f58cf79b33f9b89"
+      "bytes": 9450,
+      "sha256": "154c8b972d9aebc9bc45fa34c2394cb3a037201eedfa21096a30f57f66bcc6bb"
     },
     "app/config.py": {
       "bytes": 4050,
@@ -106,12 +110,12 @@
       "sha256": "ed8b1965000efb790ae18d89633b2ef16f836937cb6ef890e7d6fde1fadce39c"
     },
     "app/ui.py": {
-      "bytes": 12696,
-      "sha256": "d33f88260b290b38260b3a483a42798a7fd66973a819833163a27d5ca32bcf47"
+      "bytes": 12797,
+      "sha256": "857ebb453fdd2e876de04cc1481049b02e93fa3c3a0f4df2b7f9e5aa899eb297"
     },
     "app/web.py": {
-      "bytes": 26817,
-      "sha256": "474420e895540ef889026b582ffed4bd1914f397ad956d383dcc63444b3b2c96"
+      "bytes": 27162,
+      "sha256": "53a7f94db9ea0dfef9caf7a9f02fb104524f8dd2ef7e72b29af892e456d3f532"
     },
     "render.yaml": {
       "bytes": 504,
@@ -124,6 +128,10 @@
     "requirements.txt": {
       "bytes": 33,
       "sha256": "fa8a6a52b902dc1d4fa2fdafddc4ba957bb97c8c9f6a32fa37e535e5d40ffd2c"
+    },
+    "tests/test_classplus_reference.py": {
+      "bytes": 7805,
+      "sha256": "10b60ab76386ebe1c0d65831f9128b48015d796cdd53dd77c8bdf17be5ea795f"
     },
     "tests/test_core.py": {
       "bytes": 13957,
@@ -142,8 +150,8 @@
       "sha256": "7273848060234337426fd48ea830b7e9a35d531fbd4308a8777d8d74f5a168ce"
     },
     "tests/test_upgrade.py": {
-      "bytes": 19948,
-      "sha256": "5797f46b395a94005bc14d23918300ae639898969b734ec81dc6d5b0a05e86a1"
+      "bytes": 20007,
+      "sha256": "fcd95269a083d4ffbde4e7b5ebe1d75824ff4e67d4c69e2c98c7b8e408d70968"
     }
   }
 }

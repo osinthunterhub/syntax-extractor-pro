@@ -118,7 +118,7 @@ def provider_panel(provider, configured, connected):
     if provider not in ('appx', 'classplus'):
         raise ValueError('INVALID_PROVIDER')
     title = 'AppX' if provider == 'appx' else 'Classplus'
-    hint = '/connect appx API_HOST USER_ID TOKEN' if provider == 'appx' else '/connect classplus YOUR_OWN_TOKEN'
+    hint = '/connect appx API_HOST USER_ID TOKEN' if provider == 'appx' else 'Tap Connect my account below, or /connect classplus. Your existing own token is enough; no AppX coaching host/org mapping is required.'
     readiness = ('Operator setup pending: no approved coaching API host configured.'
                  if provider == 'appx' and not configured else 'Adapter mock-tested; real provider verification pending.')
     return Panel(f'{title} selected. Your other provider session is unchanged.\n'

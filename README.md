@@ -1,6 +1,6 @@
 # Independent Extractor — v0.2.1-dev
 
-**Separate new project. AppX + Classplus adapters. 82 local/mock tests. Not deployed,
+**Separate new project. AppX + Classplus adapters. 86 local/mock tests. Not deployed,
 not a claim of A–Z parity, real provider compatibility or fastest performance.**
 
 The existing `@TurboForwarderPro_Bot`, its credentials, sessions, settings and hosting
@@ -111,7 +111,7 @@ python -m pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
-82 tests pass under local Python 3.13. Production module Pyflakes check is clean.
+86 tests pass under local Python 3.13. Production module Pyflakes check is clean.
 GitHub CI passed for Python 3.12 + 3.13 (run 45343096784). Python 3.12 hosted deployment runtime,
 Render build and live APIs remain unverified. `TEST-RESULTS.txt` records actual local
 results. All provider requests are mocked; local webhook HTTP tests run only locally.
@@ -159,3 +159,9 @@ Provider live verification remains pending.
 Startup getMe retries Telegram 429 at most three attempts, honoring retry_after
 (up to 120 seconds); sending messages/files is never automatically retried.
 Full Git history was scanned for supplied secrets before publication.
+
+Liveness /healthz binds before background Telegram identity verification.
+It reports ready/identity_verified/webhook_configured separately; /readyz is503
+until bootstrap succeeds. Unready webhook returns503 without acknowledging updates.
+At most three startup getMe attempts, then stop until next process startup: no
+crash-loop retry. A live Render web service does not mean an active Telegram bot.

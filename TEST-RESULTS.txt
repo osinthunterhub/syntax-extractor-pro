@@ -1,5 +1,4 @@
-Syntax Extractor Pro v0.2.1-dev startup patch
-Local Python3.13.18: 82 passed in0.33s
-App pyflakes clean. Prior74-test revision passed CI3.12+3.13.
-New patch CI pending. Render build3.12.12 succeeded; startup Telegram429.
-No real provider extraction or channel delivery test.
+Syntax Extractor Pro readiness patch
+Local Python3.13.18: 86 passed in0.34s; app pyflakes clean.
+82-test revision eb5d6d9 passed CI3.12+3.13 (run45344075591).
+Readiness patch CI pending. No live provider or channel tests.

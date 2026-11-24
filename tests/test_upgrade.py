@@ -365,3 +365,69 @@ def test_telegram_malformed_retry_metadata_not_trusted(value):
         with pytest.raises(ProviderError,match='RATE_LIMITED_RETRY_LATER'):
             await Telegram(Session(response),'synthetic-token').call('getMe')
     run(case())
+
+
+def test_liveness_never_means_readiness_and_pending_webhook_not_acknowledged():
+    from aiohttp.test_utils import TestClient, TestServer
+    from app.web import create_app
+    async def case():
+        c=Config.from_env(env());b=Bot(c,TG(),FakeAppX())
+        runtime={'ready':False,'identity_verified':False,'webhook_configured':False,'startup':'identity-check-pending'}
+        async with TestClient(TestServer(create_app(c,b,runtime))) as client:
+            r=await client.get('/healthz');assert r.status==200 and (await r.json())['ready'] is False
+            r=await client.get('/readyz');assert r.status==503
+            r=await client.post('/telegram/webhook',json=update('/help'),headers={'X-Telegram-Bot-Api-Secret-Token':c.webhook_secret})
+            assert r.status==503 and b.updates.qsize()==0 and not b.state.seen
+            runtime['ready']=True
+            r=await client.get('/readyz');assert r.status==200
+    run(case())
+
+
+def test_bootstrap_identity_mismatch_never_sets_webhook_or_starts_workers():
+    from app.web import bootstrap_bot
+    async def case():
+        class Identity:
+            def __init__(self):self.calls=[]
+            async def call(self,method,payload=None):
+                self.calls.append(method)
+                return {'id':1,'is_bot':True,'username':'WrongBot'}
+        tg=Identity();c=replace(Config.from_env(env()),set_webhook=True);b=Bot(c,tg,FakeAppX())
+        runtime={'ready':False,'identity_verified':False,'webhook_configured':False,'startup':'pending'}
+        await bootstrap_bot(c,tg,b,runtime)
+        assert tg.calls==['getMe'] and not b.workers and not runtime['ready']
+        assert runtime['startup']=='BOT_IDENTITY_MISMATCH_NO_WEBHOOK_CHANGED'
+    run(case())
+
+
+def test_bootstrap_verifies_before_webhook_and_confirms_registration():
+    from app.web import bootstrap_bot
+    async def case():
+        class Identity:
+            def __init__(self):self.calls=[]
+            async def call(self,method,payload=None):
+                self.calls.append(method)
+                if method=='getMe':return {'id':77,'is_bot':True,'username':'IndependentTestBot'}
+                return True
+        tg=Identity();c=replace(Config.from_env(env()),set_webhook=True);b=Bot(c,tg,FakeAppX())
+        runtime={'ready':False,'identity_verified':False,'webhook_configured':False,'startup':'pending'}
+        try:
+            await bootstrap_bot(c,tg,b,runtime)
+            assert tg.calls==['getMe','setWebhook','setMyCommands']
+            assert runtime['ready'] and runtime['webhook_configured'] and b.destinations.bot_id==77
+        finally:await b.close()
+    run(case())
+
+
+def test_bootstrap_failed_webhook_confirmation_stays_unready():
+    from app.web import bootstrap_bot
+    async def case():
+        class Identity:
+            async def call(self,method,payload=None):
+                if method=='getMe':return {'id':77,'is_bot':True,'username':'IndependentTestBot'}
+                return False
+        tg=Identity();c=replace(Config.from_env(env()),set_webhook=True);b=Bot(c,tg,FakeAppX())
+        runtime={'ready':False,'identity_verified':False,'webhook_configured':False,'startup':'pending'}
+        await bootstrap_bot(c,tg,b,runtime)
+        assert runtime['identity_verified'] and not runtime['ready'] and not runtime['webhook_configured']
+        assert runtime['startup']=='TELEGRAM_WEBHOOK_NOT_CONFIRMED'
+    run(case())

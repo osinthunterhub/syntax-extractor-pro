@@ -247,14 +247,19 @@ class Bot:
         self.state.connections.clear()
         self.destinations.values.clear()
 
-def create_app(config, bot):
+def create_app(config, bot, runtime=None):
+    runtime = runtime if runtime is not None else {'ready': True, 'identity_verified': False, 'webhook_configured': False, 'startup': 'test-harness'}
     app = web.Application(client_max_size=65536)
     async def health(request):
-        return web.json_response({'service': 'independent-extractor', 'version': '0.2.1-dev', 'status': 'process-alive', 'providers': {'appx': 'limited-test-mvp', 'classplus': 'mock-tested-live-unverified'}, 'persistent_jobs': False})
+        return web.json_response({'service': 'independent-extractor', 'version': '0.2.1-dev', 'status': 'process-alive', 'providers': {'appx': 'limited-test-mvp' if config.appx_hosts else 'disabled-no-approved-host', 'classplus': 'mock-tested-live-unverified'}, 'persistent_jobs': False, **runtime})
+    async def ready(request):
+        return web.json_response(dict(runtime), status=200 if runtime['ready'] else 503)
     async def webhook(request):
         supplied = request.headers.get('X-Telegram-Bot-Api-Secret-Token', '')
         if not re.fullmatch(r'[A-Za-z0-9_-]{32,128}', supplied) or not hmac.compare_digest(supplied, config.webhook_secret):
             raise web.HTTPUnauthorized()
+        if not runtime['ready']:
+            raise web.HTTPServiceUnavailable(headers={'Retry-After': '30'})
         try:
             update = await request.json()
         except (ValueError, UnicodeDecodeError):
@@ -269,36 +274,64 @@ def create_app(config, bot):
         bot.updates.put_nowait(update)
         return web.json_response({'ok': True})
     app.router.add_get('/healthz', health)
+    app.router.add_get('/readyz', ready)
     app.router.add_get('/', health)
     app.router.add_post('/telegram/webhook', webhook)
     return app
 
+async def bootstrap_bot(config, tg, bot, runtime):
+    try:
+        me = await verified_identity(tg, config.expected_username)
+        bot.destinations.bot_id = me['id']
+        runtime['identity_verified'] = True
+        if config.set_webhook:
+            confirmed = await tg.call('setWebhook', {
+                'url': config.public_url + '/telegram/webhook',
+                'secret_token': config.webhook_secret,
+                'allowed_updates': ['message', 'callback_query'],
+                'max_connections': 2, 'drop_pending_updates': False})
+            if confirmed is not True:
+                raise ProviderError('TELEGRAM_WEBHOOK_NOT_CONFIRMED')
+            runtime['webhook_configured'] = True
+            confirmed = await tg.call('setMyCommands', {
+                'commands': [{'command': name, 'description': description} for name, description in COMMANDS]})
+            if confirmed is not True:
+                raise ProviderError('TELEGRAM_COMMANDS_NOT_CONFIRMED')
+        bot.start()
+        runtime['ready'] = True
+        runtime['startup'] = 'verified' if config.set_webhook else 'verified-webhook-disabled'
+    except asyncio.CancelledError:
+        raise
+    except ProviderError as exc:
+        runtime['startup'] = str(exc)
+        logging.warning('BOT_NOT_READY %s', str(exc))
+    except Exception:
+        runtime['startup'] = 'STARTUP_FAILED_NO_SECRET_DETAILS_LOGGED'
+        logging.warning('BOT_NOT_READY STARTUP_FAILED_NO_SECRET_DETAILS_LOGGED')
+
+
 async def application():
     config = Config.from_env()
-    # Resolver rejects loopback/private destinations; cookies are never shared between users.
+    # Bind health separately from Telegram readiness. No webhook intake before verification.
     resolver = PublicResolver()
     connector = aiohttp.TCPConnector(limit=6, limit_per_host=3, resolver=resolver, ttl_dns_cache=60)
     session = aiohttp.ClientSession(connector=connector, cookie_jar=aiohttp.DummyCookieJar(), trust_env=False)
     bot = None
     try:
         tg = Telegram(session, config.bot_token)
-        me = await verified_identity(tg, config.expected_username)
         providers = {'appx': AppX(session, config.appx_hosts), 'classplus': Classplus(session)}
-        bot = Bot(config, tg, providers, me.get('id', 0))
-        app = create_app(config, bot)
+        bot = Bot(config, tg, providers, 0)
+        runtime = {'ready': False, 'identity_verified': False,
+                   'webhook_configured': False, 'startup': 'identity-check-pending'}
+        app = create_app(config, bot, runtime)
+        startup_task = None
         async def startup(_):
-            try:
-                if config.set_webhook:
-                    await tg.call('setWebhook', {'url': config.public_url + '/telegram/webhook', 'secret_token': config.webhook_secret,
-                            'allowed_updates': ['message', 'callback_query'], 'max_connections': 2, 'drop_pending_updates': False})
-                    await tg.call('setMyCommands', {'commands': [{'command': name, 'description': description} for name, description in COMMANDS]})
-                bot.start()
-            except BaseException:
-                await bot.close()
-                await session.close()
-                await resolver.close()
-                raise
+            nonlocal startup_task
+            startup_task = asyncio.create_task(bootstrap_bot(config, tg, bot, runtime))
         async def cleanup(_):
+            if startup_task:
+                startup_task.cancel()
+                await asyncio.gather(startup_task, return_exceptions=True)
             await bot.close()
             await session.close()
             await resolver.close()

@@ -18,20 +18,20 @@
       "sha256": "f01d748a75eb195e6fd73201279bfb23f09036ddd360eb3e9ff40ef042acbc8a"
     },
     "DEPLOYMENT-STATUS.md": {
-      "bytes": 722,
-      "sha256": "cc05f7d9611f6bf74db5c53806427a0c7f1e7d6647d240e376d71322ffdbe666"
+      "bytes": 1786,
+      "sha256": "b60441c1ab67184485ec7608d344f99c031d9ada3047e39ada706aa0a5261a31"
     },
     "README.md": {
-      "bytes": 12573,
-      "sha256": "94e2dbc15521b786c51cac7d6fb657384498663205d62a3fb70496a04f6bea60"
+      "bytes": 13099,
+      "sha256": "24b94f7698240851fba2d89cd5c32ed5310094a0837c858b58b7d091453a0fa0"
     },
     "REFERENCE-COMMAND-INVENTORY.csv": {
       "bytes": 2894,
       "sha256": "3496873e7b3518413f27f7b10c4d38193e07d59c751393d701467e95205478b3"
     },
     "REFERENCE-FEATURE-MATRIX.csv": {
-      "bytes": 2560,
-      "sha256": "d8126a1105dc828f83523e8d2b94e456a26fd3aaceaf67b2cf1d14a486948836"
+      "bytes": 2977,
+      "sha256": "f51523ed44b3d15e338a7b2335c2275591a33f64a965ef2f045b60a87fe7a4ca"
     },
     "RESEARCH-NOTES.md": {
       "bytes": 2038,
@@ -42,8 +42,8 @@
       "sha256": "bac73f2eb9fdd5b9d9a546a2b0d7f536c8c580b612b33bc7c8feba73585ebc34"
     },
     "TEST-RESULTS.txt": {
-      "bytes": 390,
-      "sha256": "4f8635acdadcba0da13a1fe07a536b471fc7b9a95020db11f218290118c9baf2"
+      "bytes": 500,
+      "sha256": "38e9396ffcbcf6e65a79d306e1afc0d87e83a074bde7d3c64279c032d3d14c66"
     },
     "app/__init__.py": {
       "bytes": 84,

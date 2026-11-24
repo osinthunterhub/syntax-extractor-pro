@@ -112,7 +112,7 @@ python -m pytest -q
 ```
 
 130 tests pass under local Python 3.13. Production module Pyflakes check is clean.
-GitHub CI passed for Python 3.12 + 3.13 (86-test revision, run 45344759182).
+GitHub CI passed for Python 3.12 + 3.13 (130-test revision, run 45350989017).
 Render Python 3.12.12 build and HTTP liveness/auth/readiness were verified.
 Telegram identity and provider APIs remain unverified. `TEST-RESULTS.txt` records actual local
 results. All provider requests are mocked; local webhook HTTP tests run only locally.
@@ -167,7 +167,7 @@ until bootstrap succeeds. Unready webhook returns503 without acknowledging updat
 At most three startup getMe attempts, then stop until next process startup: no
 crash-loop retry. A live Render web service does not mean an active Telegram bot.
 
-## Observed deployment result
+## Previous v0.2.1 deployment result (history)
 Code commit3760b1a345d7dd9eddf999d5e7994062b4b362bb deployed successfully to
 https://syntax-extract-pro.onrender.com on Render Free (Singapore).
 Health200 is process-only. Bot startup stopped after bounded Telegram429 retries:
@@ -191,9 +191,17 @@ See DEPLOYMENT-STATUS.md for actual service/deploy/CI IDs.
 - No guessed provider mappings, hosts or login-free premium/unlock features.
 - Support links to the user's supplied public handle @SyntaxError_2. It is NOT an
   export destination. User-selected destination delivery remains separate.
--130 local/mock tests. CI and deployment for this release are tracked separately.
+-130 local/mock tests; Python3.12/3.13 CI passed. Web service deployed; Telegram activation blocked.
 
 Reference public profile https://t.me/pro_extractorbot was fetched. Its interactive
 bot was NOT driven or authenticated into. Menu content came from the user's seven
 screenshots, not a claim of end-to-end reference-function verification. No copied
 branding/banner, embedded credentials or protected media API calls are included.
+
+## Verified v0.3 release result
+Deployed code `6dd558d2545faabcb89f955a816bda49c358bbc3`; Render deploy `dep-dc2k3b3ncjis73d7cqbg` is LIVE
+(web process only), Free plan verified. CI run `45350989017`: Python3.12 and3.13
+both SUCCESS,130 local tests PASS.
+Telegram startup still ends TELEGRAM_RATE_LIMITED_RETRY_AFTER_32:
+ready=false, identity_verified=false, webhook_configured=false, /readyz503.
+No Telegram-online claim; startup retries stopped. Provider exports still live-unverified.

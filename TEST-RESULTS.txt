@@ -1,7 +1,9 @@
 Syntax Extractor Pro v0.3.0-dev
-Local Python3.13: ........................................................................ [ 55%]
+........................................................................ [ 55%]
 ..........................................................               [100%]
 130 passed in 0.27s
-Production app pyflakes: PASS (no findings).
-UI tests are mocked; no real provider/channel verification.
-CI/deployment release verification tracked separately.
+Production app pyflakes: PASS
+GitHub CI45350989017: Python3.12 SUCCESS; Python3.13 SUCCESS.
+Render release dep-dc2k3b3ncjis73d7cqbg: LIVE web process.
+HTTP health200/readiness503 verified; Telegram429, not active.
+Provider requests/UI actions use mock tests; no live export/channel test.

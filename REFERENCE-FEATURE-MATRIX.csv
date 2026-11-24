@@ -19,3 +19,5 @@ Bulk credential checker,check.py,Not reproduced,No account credential testing wo
 Remote eval/shell,eval.py,Not reproduced,No arbitrary-code operator interface
 Encrypted or DRM media extraction,provider decrypt/key code,Not reproduced,Unsupported/protected fields skipped; no decryption/signing endpoint
 Deployment and real provider verification,whole reference project,Pending,"No new repository, hosting, webhook or live test yet"
+Screenshot-inspired home/login/tools/support navigation,user screenshots + public @pro_extractorbot profile,Implemented; mock-tested; deployed code,Telegram activation blocked by429; not claiming visual end-to-end bot test
+Screenshot institute/public directories,49 login labels and16 public labels,Catalog only; paginated information,No new provider adapters; unsupported entries cannot request credentials/export

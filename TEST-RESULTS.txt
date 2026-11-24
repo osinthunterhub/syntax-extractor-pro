@@ -1,5 +1,6 @@
-v0.3.2-dev:204 synthetic regression tests PASS0.54s; app pyflakes clean.
-Two full provider setup->selected-channel workflows tested with stubs only.
-Classplus fixed official endpoint returned401 without credentials.
-Provider live authenticated course/export/channel checks NOT yet possible.
-CI and deployment verification recorded separately after completion.
+v0.3.2-dev:204 synthetic regression tests PASS0.41s; app pyflakes clean.
+CI45358523496: Python3.12 and3.13 SUCCESS.
+Live final deploydep-dc2kt3e7bikc73909ipg: /readyz200, same-bot identity/handlers verified.
+Two full provider setup->selected-channel workflows use synthetic stubs only.
+Classplus official endpoint401 without credentials; AppX approved host absent.
+Live provider-account export/channel document certification still PENDING.

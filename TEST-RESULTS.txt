@@ -1,7 +1,7 @@
-v0.4.0-dev:319 synthetic regression tests PASS0.57s; app Pyflakes clean; diff whitespace clean.
-Complete fake OTP->course->selected-channel flow; all registered command handlers exercised.
-Control queue served dashboard/cancel while4regular provider calls deliberately stalled.
-1000sequential users no stale per-user-lock exhaustion; cache does not bypass export membership.
-Actual nonexistent-org GET returned expected rejection; NO real SMS sent.
-Valid-account SMS/OTP/provider export/actual channel document remain UNVERIFIED.
-CI and final deployment evidence recorded separately after execution.
+v0.4.0-dev:319 synthetic regression tests PASS0.57s; app Pyflakes/diff clean.
+CI45363068720: Python3.12/3.13 SUCCESS.
+Deploydep-dc2lakcs728c73auom80: LIVE; readiness200; identity/handlers and OTP/dashboard/control flags verified.
+All registered command routes and complete fake OTP->course->selected-channel tests pass.
+Priority controls served while4regular requests deliberately stalled;1000users no stale lock cap.
+Only actual provider probe: nonexistent org GET rejected, NO real SMS sent.
+Valid-account SMS/OTP/course export/actual channel document NOT yet verified.

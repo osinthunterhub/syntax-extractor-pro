@@ -6,7 +6,7 @@ import asyncio
 import json
 import re
 import aiohttp
-from ..provider_common import MAX_RESPONSE, Course, Export, ProviderError, clear_url, safe_title
+from ..provider_common import MAX_RESPONSE, Course, Export, ProviderError, clear_url, safe_title, protected_row
 
 class Classplus:
     name = 'classplus'
@@ -107,7 +107,7 @@ class Classplus:
                     else:
                         skipped += 1
                     continue
-                protected = any(row.get(k) in (True, 1, '1', 'true') for k in ('isDrm', 'isDRM', 'isEncrypted'))
+                protected = protected_row(row)
                 url = None if protected else clear_url(row.get('url'))
                 if not url:
                     skipped += 1

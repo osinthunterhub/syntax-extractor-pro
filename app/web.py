@@ -11,9 +11,11 @@ from .providers import AppX, Classplus, ProviderRouter, ProviderError, PublicRes
 from .destinations import Destinations
 from .jobs import Jobs
 from .telegram import Telegram, verified_identity
-from .ui import callback_command, render_panel, provider_panel
+from .ui import callback_command, render_panel, provider_panel, Panel, button
+from .conversation import Conversations
 
-HELP = '''Syntax Extractor Pro — v0.3.1-dev, mock-tested; live verification pending.
+HELP = '''Syntax Extractor Pro — v0.3.2-dev. Telegram active; provider live tests pending.
+/connect — guided private account setup (own existing token; no password/OTP)
 AppX and Classplus have separate account connections.
 /start or /xtract — home
 /login — account panel
@@ -57,6 +59,7 @@ class Bot:
         self.router = ProviderRouter(provider if isinstance(provider, dict) else {'appx': provider})
         self.state = State()
         self.selected = {}
+        self.conversations = Conversations()
         self.destinations = Destinations(tg, bot_id)
         self.updates = asyncio.Queue(maxsize=32)
         self.locks, self.last, self.workers = {}, {}, []
@@ -85,6 +88,18 @@ class Bot:
         else:
             await self.menu(chat, panel.text)
 
+    async def show_course_page(self, uid, cid, provider, nonce, page, message_id=None):
+        courses, pages = self.conversations.page(uid, provider, nonce, page)
+        rows = [(button(c.name[:48], f'course:{nonce}:{page * 8 + i}'),) for i, c in enumerate(courses)]
+        nav = []
+        if page:
+            nav.append(button('⬅️ Previous', f'coursepage:{nonce}:{page - 1}'))
+        if page + 1 < pages:
+            nav.append(button('Next ➡️', f'coursepage:{nonce}:{page + 1}'))
+        if nav:
+            rows.append(tuple(nav))
+        await self.show_panel(cid, Panel(f'{provider}: course choices • {page + 1}/{pages}\nChoose a course, or /export COURSE_ID. Choices expire in5 minutes; entitlement and channel rights are rechecked before delivery.', tuple(rows)), message_id)
+
     async def handle(self, update):
         callback = update.get('callback_query')
         if isinstance(callback, dict):
@@ -111,8 +126,20 @@ class Bot:
         if not isinstance(uid, int) or isinstance(uid, bool) or not isinstance(cid, int) or sender.get('is_bot'):
             return
         text = message.get('text', '')
-        if not isinstance(text, str) or not text.startswith('/'):
+        if not isinstance(text, str) or not text.strip():
             return
+        if not text.startswith('/'):
+            if chat.get('type') != 'private' or uid != cid or uid not in self.conversations.steps:
+                return
+            await self.tg.delete(cid, message.get('message_id'))
+            try:
+                text, prompt = self.conversations.accept(uid, text, self.config.appx_hosts)
+                if prompt:
+                    await self.tg.send(cid, prompt)
+                    return
+            except ProviderError as exc:
+                await self.tg.send(cid, str(exc))
+                return
         parts = text.split()
         cmd = parts[0].split('@')[0].lower()
         panel_message_id = message.get('message_id') if isinstance(callback, dict) else None
@@ -129,13 +156,23 @@ class Bot:
         lock = self.locks.setdefault(uid, asyncio.Lock())
         async with lock:
             now = time.monotonic()
-            cheap = {'/start', '/home', '/xtract', '/help', '/appx', '/classplus', '/cp', '/cancel', '/disconnect', '/logoutall', '/status', '/destination', '/cleardestination', '/panel', '/login', '/free', '/tools', '/support', '/guide', '/privacy', '/capabilities'}
-            if cmd not in cheap and now - self.last.get(uid, 0) < 2:
+            cheap = {'/start', '/home', '/xtract', '/help', '/appx', '/classplus', '/cp', '/cancel', '/disconnect', '/logoutall', '/status', '/destination', '/cleardestination', '/panel', '/login', '/free', '/tools', '/support', '/guide', '/privacy', '/capabilities', '/coursepage'}
+            is_setup_prompt = cmd == '/connect' and (len(parts) == 1 or len(parts) == 2 and parts[1].lower() in ('appx', 'classplus'))
+            if cmd not in cheap and not is_setup_prompt and now - self.last.get(uid, 0) < 2:
                 await self.tg.send(cid, 'Please wait two seconds between API commands.')
                 return
-            if cmd not in cheap:
+            if cmd not in cheap and not is_setup_prompt:
                 self.last[uid] = now
             selected = self.selected.get(uid, 'appx')
+            if cmd == '/choose':
+                try:
+                    if len(parts) != 3 or not parts[2].isdigit():
+                        raise ProviderError('INVALID_COURSE_SELECTION')
+                    parts = ['/export', self.conversations.choose(uid, selected, parts[1], int(parts[2]))]
+                    cmd = '/export'
+                except ProviderError as exc:
+                    await self.tg.send(cid, str(exc))
+                    return
             try:
                 if cmd in ('/start', '/home', '/xtract', '/login', '/free', '/tools', '/support', '/guide', '/privacy', '/capabilities', '/panel'):
                     aliases = {'/start':'home','/home':'home','/xtract':'home','/login':'login','/free':'public','/tools':'tools',
@@ -145,15 +182,30 @@ class Bot:
                     except ValueError:
                         raise ProviderError('INVALID_MENU_SELECTION_USE_START') from None
                     await self.show_panel(cid, panel, panel_message_id)
+                elif cmd == '/coursepage':
+                    if len(parts) != 3 or not re.fullmatch(r'[a-f0-9]{8}', parts[1]) or not re.fullmatch(r'\d{1,2}', parts[2]):
+                        raise ProviderError('INVALID_COURSE_PAGE')
+                    await self.show_course_page(uid, cid, selected, parts[1], int(parts[2]), panel_message_id)
                 elif cmd == '/help':
                     await self.menu(cid, HELP)
                 elif cmd in ('/appx', '/classplus', '/cp'):
                     selected = 'appx' if cmd == '/appx' else 'classplus'
+                    self.conversations.clear(uid)
                     self.selected[uid] = selected
                     panel = provider_panel(selected, bool(self.config.appx_hosts), self.state.get(uid, selected) is not None)
                     await self.show_panel(cid, panel, panel_message_id)
                 elif cmd == '/connect':
                     args = parts[1:]
+                    if not args or len(args) == 1 and args[0].lower() in ('appx', 'classplus'):
+                        if args:
+                            selected = args[0].lower()
+                        if uid in self.jobs.active:
+                            raise ProviderError('CANCEL_EXISTING_JOB_BEFORE_RECONNECT')
+                        self.selected[uid] = selected
+                        prompt = self.conversations.begin(uid, selected, self.config.appx_hosts)
+                        await self.tg.send(cid, prompt)
+                        return
+                    self.conversations.clear(uid)
                     if args and args[0].lower() in ('appx', 'classplus'):
                         selected, args = args[0].lower(), args[1:]
                     if selected == 'appx' and len(args) == 3:
@@ -178,10 +230,12 @@ class Bot:
                     self.selected[uid] = selected
                     await self.tg.send(cid, f'{selected}: connected. {len(courses)} account courses returned. Token not logged. /courses')
                 elif cmd in ('/disconnect', '/logoutall'):
+                    self.conversations.clear(uid)
                     self.jobs.cancel(uid)
                     self.state.drop(uid, None if cmd == '/logoutall' else selected)
                     await self.tg.send(cid, 'Connection forgotten; cancellation requested. In-flight requests stop at deadline.')
                 elif cmd == '/cancel':
+                    self.conversations.clear(uid)
                     await self.tg.send(cid, 'Cancellation requested.' if self.jobs.cancel(uid) else 'No active job.')
                 elif cmd == '/status':
                     job = self.jobs.active.get(uid)
@@ -213,6 +267,7 @@ class Bot:
                         if not courses:
                             await self.tg.send(cid, 'No courses returned by your account.')
                             return
+                        nonce = self.conversations.course_page(uid, selected, courses)
                         buf = f'{selected}: your account courses\n'
                         for course in courses:
                             row = f'{course.id} — {course.name}' + ('' if course.folder_mode else ' [flat course; schema-dependent]') + '\n'
@@ -223,6 +278,7 @@ class Bot:
                             buf += row
                         if buf:
                             await self.tg.send(cid, buf)
+                        await self.show_course_page(uid, cid, selected, nonce, 0)
                     else:
                         if len(parts) != 2 or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', parts[1]):
                             raise ProviderError('USE_EXPORT_COURSE_ID')
@@ -255,6 +311,7 @@ class Bot:
         while True:
             await asyncio.sleep(60)
             self.state.purge()
+            self.conversations.purge()
 
     def start(self):
         self.jobs.start()
@@ -266,6 +323,11 @@ class Bot:
             task.cancel()
         await asyncio.gather(*self.workers, return_exceptions=True)
         await self.jobs.close()
+        while not self.updates.empty():
+            self.updates.get_nowait()
+            self.updates.task_done()
+        self.conversations.steps.clear()
+        self.conversations.choices.clear()
         self.state.connections.clear()
         self.destinations.values.clear()
 
@@ -279,7 +341,7 @@ def create_app(config, bot, runtime=None):
             current['startup'] = 'TELEGRAM_TRANSPORT_DISCONNECTED'
         return current
     async def health(request):
-        return web.json_response({'service': 'independent-extractor', 'version': '0.3.1-dev', 'status': 'process-alive', 'providers': {'appx': 'limited-test-mvp' if config.appx_hosts else 'disabled-no-approved-host', 'classplus': 'mock-tested-live-unverified'}, 'persistent_jobs': False, **readiness()})
+        return web.json_response({'service': 'independent-extractor', 'version': '0.3.2-dev', 'status': 'process-alive', 'providers': {'appx': 'limited-test-mvp' if config.appx_hosts else 'disabled-no-approved-host', 'classplus': 'mock-tested-live-unverified'}, 'persistent_jobs': False, **readiness()})
     async def ready(request):
         current = readiness()
         return web.json_response(current, status=200 if current['ready'] else 503)
@@ -302,6 +364,26 @@ def create_app(config, bot, runtime=None):
         bot.state.mark_seen(update['update_id'])
         bot.updates.put_nowait(update)
         return web.json_response({'ok': True})
+    async def quiesce(request):
+        # Secret-authenticated, idempotent stop-first handoff. NEVER exports a session.
+        supplied = request.headers.get('X-Telegram-Bot-Api-Secret-Token', '')
+        if not re.fullmatch(r'[A-Za-z0-9_-]{32,128}', supplied) or not hmac.compare_digest(supplied, config.webhook_secret):
+            raise web.HTTPUnauthorized()
+        if runtime.get('quiesced'):
+            return web.json_response({'quiesced': True})
+        if runtime.get('transport') != 'mtproto-bot' or not runtime.get('ready'):
+            raise web.HTTPConflict(text='TRANSPORT_NOT_READY_FOR_HANDOFF')
+        if bot.jobs.active:
+            raise web.HTTPConflict(text='ACTIVE_JOBS_WAIT_OR_CANCEL_BEFORE_HANDOFF')
+        runtime['ready'] = False
+        runtime['startup'] = 'MAINTENANCE_STOP_FIRST_HANDOFF'
+        await bot.close()
+        await bot.tg.close()
+        runtime['updates_configured'] = False
+        runtime['identity_verified'] = False
+        runtime['quiesced'] = True
+        return web.json_response({'quiesced': True})
+    app.router.add_post('/ops/quiesce', quiesce)
     app.router.add_get('/healthz', health)
     app.router.add_get('/readyz', ready)
     app.router.add_get('/', health)

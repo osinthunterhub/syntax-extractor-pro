@@ -1,4 +1,5 @@
-v0.3.1:159 tests PASS1.30s local Python3.13; app pyflakes clean.
-CI45353541407: Python3.12 and3.13 both SUCCESS.
-Live same-bot MTProto identity verified; /readyz200 and handlers active.
-Actual incoming/outgoing Telegram traffic observed. Provider exports NOT tested live.
+v0.3.2-dev:202 synthetic regression tests PASS0.54s; app pyflakes clean.
+Two full provider setup->selected-channel workflows tested with stubs only.
+Classplus fixed official endpoint returned401 without credentials.
+Provider live authenticated course/export/channel checks NOT yet possible.
+CI and deployment verification recorded separately after completion.

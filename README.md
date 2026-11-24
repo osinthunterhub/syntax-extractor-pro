@@ -259,3 +259,24 @@ mode an incoming Telegram socket message does NOT make an HTTP request to wake a
 sleeping Render instance. This workaround is therefore not an always-on guarantee.
 No self-ping/quota-evasion service is included. Prefer restoring Bot API webhook
 mode (after verifying cloud recovery) for webhook-triggered wake-up.
+
+## v0.3.2 guided-provider upgrade
+Choose provider -> **Connect my account** -> follow private prompts. Own existing
+tokens only, no password/OTP. `/connect appx` or `/connect classplus` starts setup;
+`/cancel` exits. Five-minute expiry. AppX fails safely before asking for credentials
+when no approved coaching host exists. `/courses` includes paged selection buttons
+for the full returned course list. Selection binds to your own current provider,
+expires in5 minutes, and rechecks entitlement and selected channel rights.
+
+202 synthetic tests pass (including both provider->channel mock workflows).
+This is not authenticated live provider certification. See PROVIDER-UPGRADE-v0.3.2.md
+for exact review scope, completed changes and remaining required live inputs.
+
+### Subsequent MTProto deployment handoff
+Keep Render auto-deploy OFF. Wait for CI and no active jobs. POST `/ops/quiesce`
+with the private webhook-secret header (same name as webhook auth); verify503
+readiness and quiesced=true BEFORE starting new version. This disconnects the old
+socket without logOut, blocks updates, clears volatile user state. If deployment
+fails, an explicitly controlled restart/rollback is needed; quiesced old process
+will not reconnect itself. NEVER run the bot StringSession in local diagnostics
+while hosting is active. Never expose the secret header in logs or public URLs.

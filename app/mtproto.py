@@ -18,14 +18,14 @@ def buttons(rows):
              Button.inline(b['text'], b['callback_data'].encode('ascii')) for b in row] for row in rows]
 
 
-def incoming_message(event):
+def incoming_message(event, allow_plain=False):
     uid, cid = event.sender_id, event.chat_id
     if (not event.is_private or getattr(event, 'out', False) or not isinstance(uid, int)
             or isinstance(uid, bool) or uid <= 0 or uid != cid
             or getattr(getattr(event, 'sender', None), 'bot', False)):
         return None
     text = event.raw_text
-    if not isinstance(text, str) or not text.startswith('/'):
+    if not isinstance(text, str) or len(text) > 5000 or not (text.startswith('/') or allow_plain):
         return None
     return {'message': {'from': {'id': uid, 'is_bot': False},
             'chat': {'id': cid, 'type': 'private'}, 'message_id': event.id, 'text': text}}
@@ -205,7 +205,7 @@ class MTProtoTelegram(Telegram):
 
     def start_receiving(self, bot):
         async def message(event):
-            await self.enqueue(bot, incoming_message(event), ('mtp-msg', event.chat_id, event.id))
+            await self.enqueue(bot, incoming_message(event, event.sender_id in getattr(getattr(bot, 'conversations', None), 'steps', {})), ('mtp-msg', event.chat_id, event.id))
         async def callback(event):
             await self.enqueue(bot, incoming_callback(event), ('mtp-cb', event.id))
         for handler, builder in [(message, events.NewMessage(incoming=True)), (callback, events.CallbackQuery())]:

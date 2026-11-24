@@ -2,7 +2,7 @@ import asyncio
 import json
 import re
 import aiohttp
-from ..provider_common import MAX_RESPONSE, Course, Export, ProviderError, safe_title, clear_url
+from ..provider_common import MAX_RESPONSE, Course, Export, ProviderError, safe_title, clear_url, protected_row, complete_appx_rows
 
 class AppX:
     name = 'appx'
@@ -12,7 +12,7 @@ class AppX:
         self.semaphore = asyncio.Semaphore(concurrency)
 
     async def request(self, conn, path, params):
-        if conn.host not in self.allowed_hosts or path not in ('mycoursev2', 'folder_contentsv2', 'allsubjectfrmlivecourseclass', 'alltopicfrmlivecourseclass', 'livecourseclassbycoursesubtopconceptapiv3'):
+        if conn.provider != 'appx' or conn.host not in self.allowed_hosts or path not in ('mycoursev2', 'folder_contentsv2', 'allsubjectfrmlivecourseclass', 'alltopicfrmlivecourseclass', 'livecourseclassbycoursesubtopconceptapiv3'):
             raise ProviderError('APPX_HOST_OR_OPERATION_NOT_ALLOWED')
         headers = {'Client-Service': 'Appx', 'Auth-Key': 'appxapi', 'source': 'website',
                    'Authorization': conn.token, 'User-ID': conn.account_id}
@@ -48,9 +48,7 @@ class AppX:
 
     async def courses(self, conn):
         result = await self.request(conn, 'mycoursev2', {'userid': conn.account_id})
-        rows = result.get('data')
-        if not isinstance(rows, list):
-            raise ProviderError('APPX_COURSE_SCHEMA_UNSUPPORTED')
+        rows = complete_appx_rows(result, 'APPX_COURSE_SCHEMA_UNSUPPORTED')
         if len(rows) > 500:
             raise ProviderError('APPX_COURSE_LIMIT_EXCEEDED')
         courses = {}
@@ -82,9 +80,7 @@ class AppX:
                 raise ProviderError('COURSE_TRAVERSAL_LIMIT_EXCEEDED')
             visited.add(folder_id)
             result = await self.request(conn, 'folder_contentsv2', {'course_id': course_id, 'parent_id': folder_id})
-            rows = result.get('data')
-            if not isinstance(rows, list) or len(rows) > 1000:
-                raise ProviderError('APPX_FOLDER_SCHEMA_OR_LIMIT_UNSUPPORTED')
+            rows = complete_appx_rows(result, 'APPX_FOLDER_SCHEMA_OR_LIMIT_UNSUPPORTED')
             for row in rows:
                 if not isinstance(row, dict):
                     raise ProviderError('APPX_FOLDER_SCHEMA_OR_LIMIT_UNSUPPORTED')
@@ -95,6 +91,9 @@ class AppX:
                         pending.append((fid, depth + 1))
                     else:
                         skipped += 1
+                    continue
+                if protected_row(row):
+                    skipped += 1
                     continue
                 title = safe_title(row.get('Title') or row.get('title'))
                 found = False
@@ -131,10 +130,7 @@ class AppX:
             if cancelled.is_set():
                 raise ProviderError('JOB_CANCELLED')
             result = await self.request(conn, path, params)
-            values = result.get('data')
-            if not isinstance(values, list) or len(values) > 1000 or any(not isinstance(r, dict) for r in values):
-                raise ProviderError('APPX_FLAT_SCHEMA_UNSUPPORTED')
-            return values
+            return complete_appx_rows(result, 'APPX_FLAT_SCHEMA_UNSUPPORTED')
         base = {'courseid': course_id, 'start': -1}
         subjects = await rows('allsubjectfrmlivecourseclass', base)
         if len(subjects) > 100:
@@ -158,6 +154,9 @@ class AppX:
                 items = await rows('livecourseclassbycoursesubtopconceptapiv3',
                     {**base, 'subjectid': sid, 'topicid': tid, 'conceptid': ''})
                 for item in items:
+                    if protected_row(item):
+                        skipped += 1
+                        continue
                     found = False
                     for key in ('download_link', 'pdf_link', 'pdf_link2', 'url'):
                         url = clear_url(item.get(key))

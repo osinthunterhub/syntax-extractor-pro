@@ -127,6 +127,7 @@ def provider_panel(provider, configured, connected):
         f'{hint}\n\n'
         'Use your own token in private chat only. Never share passwords.\n'
         'Export: /setdestination @YourChannel → /export COURSE_ID', (
+        (button('🔑 Connect my account', 'nav:connect'),),
         (button('📚 My courses', 'nav:courses'), button('📤 Destination', 'nav:destination')),
         (button('📊 Job status', 'nav:status'), button('✖️ Cancel job', 'action:cancel')),
         (button('🚪 Logout selected account', 'action:disconnect'),),
@@ -194,11 +195,17 @@ def callback_command(data):
     if not isinstance(data, str) or len(data) > 64 or not data.isascii():
         return None
     commands = {'provider:appx': '/appx', 'provider:classplus': '/classplus',
-        'nav:courses': '/courses', 'nav:destination': '/destination', 'nav:status': '/status',
+        'nav:connect': '/connect', 'nav:courses': '/courses', 'nav:destination': '/destination', 'nav:status': '/status',
         'nav:help': '/help', 'action:cancel': '/cancel', 'action:disconnect': '/disconnect',
         'action:logoutall': '/logoutall'}
     if data in commands:
         return commands[data]
+    match = re.fullmatch(r'coursepage:([a-f0-9]{8}):(\d{1,2})', data)
+    if match:
+        return '/coursepage ' + match[1] + ' ' + match[2]
+    match = re.fullmatch(r'course:([a-f0-9]{8}):(\d{1,3})', data)
+    if match:
+        return '/choose ' + match[1] + ' ' + match[2]
     if data in {'ui:'+key for key in ('home','login','public','tools','support','guide','privacy','coverage')}:
         return '/panel ' + data[3:]
     match = re.fullmatch(r'ui:(catalog|item):(login|public):(\d{1,2})', data)

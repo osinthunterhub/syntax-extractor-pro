@@ -72,3 +72,32 @@ def clear_url(value):
     except ValueError:
         return None
 
+
+
+def protected_row(row):
+    """Explicit protected flags fail closed, including case-insensitive API strings."""
+    for key in ('isDrm', 'isDRM', 'isEncrypted', 'is_encrypted', 'is_drm'):
+        value = row.get(key)
+        if value is True or value == 1 or isinstance(value, str) and value.strip().lower() in ('1', 'true', 'yes'):
+            return True
+    return False
+
+
+def complete_appx_rows(result, error, limit=1000):
+    """Never label a known partial response as a complete export; no guessed pagination."""
+    rows = result.get('data')
+    if not isinstance(rows, list) or len(rows) > limit or any(not isinstance(row, dict) for row in rows):
+        raise ProviderError(error)
+    containers = [result]
+    for key in ('pagination', 'meta'):
+        if isinstance(result.get(key), dict):
+            containers.append(result[key])
+    for meta in containers:
+        if any(meta.get(key) in (True, 1, '1', 'true') for key in ('hasMore', 'has_more', 'hasNextPage')):
+            raise ProviderError('APPX_PAGINATION_UNVERIFIED_NOT_CLAIMING_COMPLETE')
+        for key in ('total', 'totalCount', 'total_count'):
+            value = meta.get(key)
+            if value is not None:
+                if isinstance(value, bool) or not str(value).isdigit() or int(value) != len(rows):
+                    raise ProviderError('APPX_PAGINATION_UNVERIFIED_NOT_CLAIMING_COMPLETE')
+    return rows

@@ -205,6 +205,20 @@ def callback_command(data):
         'nav:connect': '/connect', 'nav:courses': '/courses', 'nav:destination': '/destination', 'nav:status': '/status',
         'nav:help': '/help', 'action:cancel': '/cancel', 'action:disconnect': '/disconnect',
         'action:logoutall': '/logoutall'}
+    commands.update({'access:accept': '/accept', 'nav:linktelegram': '/linktelegram',
+        'nav:tgstatus': '/tgstatus', 'nav:mychannels': '/mychannels',
+        'action:unlinktelegram': '/unlinktelegram', 'nav:users': '/users',
+        'nav:maintenance': '/maintenance', 'admin:maintenance:on': '/maintenance on',
+        'admin:maintenance:off': '/maintenance off'})
+    match_admin = re.fullmatch(r'admin:(ban|unban|users):([0-9]{1,16})', data)
+    if match_admin:
+        return '/' + match_admin[1] + ' ' + match_admin[2]
+    match_link = re.fullmatch(r'tgchan:([a-f0-9]{8}):(\d{1,3})', data)
+    if match_link:
+        return '/usechannel ' + match_link[1] + ' ' + match_link[2]
+    match_link = re.fullmatch(r'tgpage:([a-f0-9]{8}):(\d{1,2})', data)
+    if match_link:
+        return '/channelpage ' + match_link[1] + ' ' + match_link[2]
     if data in commands:
         return commands[data]
     match = re.fullmatch(r'coursepage:([a-f0-9]{8}):(\d{1,2})', data)
@@ -291,3 +305,13 @@ def login_error(code):
         'LOGIN_CANCELLED_NO_SESSION_SAVED': 'That login was cancelled. No resulting connection/course cache was saved.',
     }
     return ('⚠️ LOGIN HELP\n\n' + hints[code] + '\n\nCode: ' + code) if code in hints else code
+
+
+def access_panel(uid):
+    return Panel('👤 BOT ACCESS • TELEGRAM IDENTITY\n━━━━━━━━━━━━━━━━━━━━\n\n'
+        f'Telegram supplied your sender ID: {uid}\n\n'
+        'You are already signed into Telegram to open this bot. No Telegram phone/OTP/password is needed for basic bot access.\n\n'
+        'Accept to use your own provider accounts, jobs and selected channel. Those settings are held on this server in RAM. Extra Telegram account authorization is OPTIONAL and separate, only for account-level channel controls.\n\n'
+        'Read /privacy first if needed. No other user gets your private controls.', (
+        (button('✅ Accept & open my dashboard', 'access:accept'),),
+        (button('🛡 Privacy', 'ui:privacy'),)))

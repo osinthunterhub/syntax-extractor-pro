@@ -1,3 +1,20 @@
+# Current release: v0.5.0 — own Telegram QR linking and owner access controls
+
+`/start` → explicit bot-access consent → own `/dashboard`. Additional account login
+is OPTIONAL: `/linktelegram` → private HTTPS risk-consent + QR/2FA → `/mychannels`.
+`/tgstatus`, `/unlinktelegram`, `/logoutall`; full Telegram authorization, not
+channel-scoped permission. Only link if you trust the hosting operator. One-hour
+RAM-only sessions; Telegram Settings → Devices can revoke the new authorization.
+Owner `/admin` now has user block/unblock and maintenance controls; RAM-only.
+Old forwarding bot/session untouched. Classplus token+OTP remains separate.
+
+355 offline synthetic tests pass. Actual QR/2FA/account-channel workflows and real
+Classplus SMS/OTP/course export remain live-unverified. See
+TELEGRAM-LINK-v0.5.0-STATUS.md for concrete scope, safety and limits. Free hosting
+can sleep; AppX remains disabled. Deployment evidence recorded separately.
+
+--- Historical release notes, superseded by the current report where different ---
+
 # Current release: v0.4.0 — Classplus token + own-account OTP
 
 User dashboard `/dashboard`; login options `/cplogin`; arranged guide `/help`.

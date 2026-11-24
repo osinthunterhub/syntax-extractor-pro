@@ -1,0 +1,38 @@
+command,access,coverage,external_success_certified
+/start,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/dashboard,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/login,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/cplogin,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/cptoken,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/cpotp,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/classplus,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/connect,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/courses,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/refreshcourses,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/setdestination,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/destination,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/export,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/status,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/cancel,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/disconnect,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/logoutall,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/cleardestination,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/health,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/tools,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/guide,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/privacy,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/capabilities,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/support,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/free,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/appx,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/help,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/linktelegram,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/tgstatus,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/mychannels,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/unlinktelegram,own ordinary user,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/users,owner-only,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/ban,owner-only,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/unban,owner-only,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/maintenance,owner-only,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/admin,owner-only,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/stats,owner-only,synthetic handler exercised; usage/disconnected/denial may be expected,no

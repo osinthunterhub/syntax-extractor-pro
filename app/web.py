@@ -15,6 +15,10 @@ from .telegram import Telegram, verified_identity
 from .ui import callback_command, render_panel, provider_panel, Panel, button
 from .conversation import Conversations
 from .classplus_auth import ClassplusLogin
+from .account_link import AccountLinks
+from .access import Access
+from .link_portal import add_link_portal
+from .ui import access_panel
 from .ui import classplus_login_panel, dashboard_panel, owner_panel, login_error
 
 HELP = """⚡ SYNTAX EXTRACTOR PRO
@@ -49,8 +53,13 @@ HELP = """⚡ SYNTAX EXTRACTOR PRO
 /free — public-source availability (none connected yet)
 /help — this arranged guide
 
+🔐 TELEGRAM ACCOUNT (separate optional authorization)
+/linktelegram — private QR/2FA portal; full-session risk disclosed
+/tgstatus | /mychannels | /unlinktelegram
+
 🛠 OWNER
-/admin or /stats — owner-only read-only operations panel
+/admin | /stats | /users | /ban USER_ID | /unban USER_ID
+/maintenance on|off — RAM-only access control
 
 Classplus OTP requires explicit SMS confirmation; never send a Telegram code.
 No passwords, shared accounts, automatic registration or DRM bypass.
@@ -73,12 +82,17 @@ COMMANDS = [
     ('privacy', 'Privacy and session limits'), ('capabilities', 'Honest feature availability'),
     ('support', 'Safe support contact'), ('free', 'Public-source availability'),
     ('appx', 'AppX setup/status'), ('help', 'Arranged command guide'),
+    ('linktelegram', 'Link your OWN Telegram account via QR'), ('tgstatus', 'Your extra Telegram link status'),
+    ('mychannels', 'Your public admin channels'), ('unlinktelegram', 'Revoke your extra Telegram link'),
+    ('users', 'Owner-only user registry'), ('ban', 'Owner-only block a user from this bot'),
+    ('unban', 'Owner-only unblock a user'), ('maintenance', 'Owner-only pause or resume bot access'),
     ('admin', 'Owner-only read-only admin panel'), ('stats', 'Owner-only operations statistics')]
 
 
 def published_commands(config):
     return [(name, description) for name, description in COMMANDS
-            if name not in ('admin', 'stats')
+            if name not in ('admin', 'stats', 'users', 'ban', 'unban', 'maintenance')
+            and (name not in ('linktelegram','tgstatus','mychannels','unlinktelegram') or config.telegram_link_enabled)
             and (name != 'appx' or config.appx_hosts)
             and (name != 'cpotp' or config.classplus_otp_enabled)]
 
@@ -90,6 +104,8 @@ class Bot:
         self.state = State()
         self.selected = {}
         self.conversations = Conversations()
+        self.access = Access(config.owner_id)
+        self.account_links = AccountLinks(config)
         self.classplus_login = ClassplusLogin(getattr(self.router.providers.get('classplus'), 'session', None))
         self.course_cache, self.revisions, self.lock_refs = {}, {}, {}
         self.destinations = Destinations(tg, bot_id)
@@ -155,7 +171,7 @@ class Bot:
         if isinstance(callback, dict):
             text = callback_command(callback.get('data')) or ''
         cmd = text.split()[0].split('@')[0].lower() if isinstance(text, str) and text.split() else ''
-        return self.fast_updates if cmd in {'/cancel', '/disconnect', '/logoutall', '/dashboard', '/admin', '/stats', '/health', '/status'} else self.updates
+        return self.fast_updates if cmd in {'/cancel', '/disconnect', '/logoutall', '/dashboard', '/admin', '/stats', '/health', '/status', '/tgstatus', '/unlinktelegram'} else self.updates
 
     @asynccontextmanager
     async def user_lock(self, uid):
@@ -221,15 +237,23 @@ class Bot:
     async def local_control(self, uid, cid, cmd, message_id=None):
         selected = self.selected.get(uid, 'classplus' if self.config.classplus_otp_enabled else 'appx')
         if cmd in ('/cancel', '/disconnect', '/logoutall'):
-            had_setup = uid in self.classplus_login.pending or uid in self.conversations.steps
+            had_setup = uid in self.classplus_login.pending or uid in self.conversations.steps or uid in self.account_links.by_user
+            await self.account_links.cancel_flow(uid)
             self.clear_login(uid)
             cancelled = self.jobs.cancel(uid)
+            if cmd == '/logoutall':
+                await self.account_links.unlink(uid)
             if cmd != '/cancel':
                 self.state.drop(uid, None if cmd == '/logoutall' else selected)
                 text = 'Connection forgotten; cancellation requested. In-flight requests stop at deadline.'
             else:
                 text = 'Cancellation requested.' if cancelled or had_setup else 'No active job.'
             await self.tg.send(cid, text)
+        elif cmd == '/tgstatus':
+            await self.tg.send(cid, 'EXTRA TELEGRAM ACCOUNT LINK\n\n' + self.account_links.status(uid) + '\n\n/linktelegram • /mychannels • /unlinktelegram\nRAM-only, one-hour lifetime. This is separate from basic bot identity and Classplus login.')
+        elif cmd == '/unlinktelegram':
+            revoked = await self.account_links.unlink(uid)
+            await self.tg.send(cid, 'Extra Telegram link disconnected. ' + ('This implementation confirmed no active authorization remains for that new link.' if revoked else 'Remote revocation could not be confirmed; remove Syntax Extractor Linked Account in Telegram Settings → Devices.') + '\nProvider tokens and old forwarding bot sessions are separate.')
         elif cmd == '/status':
             job = self.jobs.active.get(uid)
             await self.tg.send(cid, f'Job {job.id} ({job.connection.provider}): queued/running; cancel={job.cancelled.is_set()}' if job else 'No active job.')
@@ -238,7 +262,10 @@ class Bot:
             dest = self.destinations.values.get(uid)
             job = self.jobs.active.get(uid)
             setup = self.classplus_login.pending.get(uid) or self.conversations.steps.get(uid)
-            await self.show_panel(cid, dashboard_panel(selected, accounts, f'{dest.title} ({dest.chat_id})' if dest else 'Not set — /setdestination @YourChannel', f'{job.connection.provider}: queued/running' if job else 'No active job', setup.stage if setup else 'Not active', bool(self.config.owner_id and uid == self.config.owner_id)), message_id)
+            panel = dashboard_panel(selected, accounts, f'{dest.title} ({dest.chat_id})' if dest else 'Not set — /setdestination @YourChannel', f'{job.connection.provider}: queued/running' if job else 'No active job', setup.stage if setup else 'Not active', bool(self.config.owner_id and uid == self.config.owner_id))
+            if self.config.telegram_link_enabled:
+                panel = Panel(panel.text + '\n\nExtra Telegram account: ' + self.account_links.status(uid), panel.rows + ((button('🔐 Link my Telegram', 'nav:linktelegram'), button('📢 My public channels', 'nav:mychannels')), (button('🔎 Telegram link status', 'nav:tgstatus'), button('🚪 Unlink Telegram', 'action:unlinktelegram'))))
+            await self.show_panel(cid, panel, message_id)
         elif cmd in ('/admin', '/stats'):
             if not self.config.owner_id or uid != self.config.owner_id:
                 raise ProviderError('OWNER_ONLY')
@@ -248,12 +275,110 @@ class Bot:
                 f'Classplus OTP setups: {len(self.classplus_login.pending)}\n'
                 f'Provider accounts live-certified: no\nDurable jobs: no\n\n'
                 f'Update queues: {self.updates.qsize()} regular / {self.fast_updates.qsize()} control')
-            await self.show_panel(cid, owner_panel(summary), message_id)
+            panel = owner_panel(summary)
+            if self.config.access_consent_enabled:
+                panel = Panel(panel.text.replace('Read-only operations panel.', 'Operations and access controls. RAM-only moderation resets on restart/deploy.'), panel.rows + ((button('👥 User registry', 'nav:users'), button('🛑 Maintenance', 'nav:maintenance')),))
+            await self.show_panel(cid, panel, message_id)
         elif cmd == '/health':
             connected = bool(getattr(self.tg, 'connected', True))
-            await self.tg.send(cid, '🩺 BOT HEALTH\n\nVersion: 0.4.0-dev\nTelegram socket: ' + ('connected' if connected else 'disconnected') + '\n\nClassplus token: enabled\nClassplus OTP: ' + ('enabled; real account verification pending' if self.config.classplus_otp_enabled else 'disabled') + '\nAppX: ' + ('configured; live-unverified' if self.config.appx_hosts else 'disabled; host pending') + '\n\nFree hosting can sleep. Provider/SMS latency is external. Settings are RAM-only.')
+            await self.tg.send(cid, '🩺 BOT HEALTH\n\nVersion: 0.5.0-dev\nTelegram socket: ' + ('connected' if connected else 'disconnected') + '\n\nClassplus token: enabled\nClassplus OTP: ' + ('enabled; real account verification pending' if self.config.classplus_otp_enabled else 'disabled') + '\nAppX: ' + ('configured; live-unverified' if self.config.appx_hosts else 'disabled; host pending') + '\n\nFree hosting can sleep. Provider/SMS latency is external. Settings are RAM-only.')
         else:
             return False
+        return True
+
+    async def linked_channel_page(self, uid, cid, nonce, page, message_id=None):
+        item = self.account_links.choices.get(uid)
+        if not item or item[0] <= time.monotonic() or item[1] != nonce:
+            raise ProviderError('LINKED_CHANNEL_CHOICE_EXPIRED_USE_MYCHANNELS')
+        channels = item[2]; pages = (len(channels) + 9) // 10
+        if not 0 <= page < pages:
+            raise ProviderError('INVALID_CHANNEL_PAGE')
+        rows = [(button(title[:48], f'tgchan:{nonce}:{page * 10 + i}'),) for i, (title, username) in enumerate(channels[page * 10:(page + 1) * 10])]
+        nav = []
+        if page: nav.append(button('⬅️ Previous', f'tgpage:{nonce}:{page - 1}'))
+        if page + 1 < pages: nav.append(button('Next ➡️', f'tgpage:{nonce}:{page + 1}'))
+        if nav: rows.append(tuple(nav))
+        body = '\n\n'.join(f'{title}\n{username}' for title, username in channels[page * 10:(page + 1) * 10])
+        await self.show_panel(cid, Panel(f'📢 MY PUBLIC ADMIN CHANNELS • {page + 1}/{pages}\n\n{body}\n\nTap to select destination. You and this bot must still have required channel admin rights. Private channels are not enumerated; use /setdestination for an existing target.', tuple(rows)), message_id)
+
+    async def account_action(self, uid, cid, cmd, parts, message_id=None):
+        if cmd == '/linktelegram':
+            token = await self.account_links.invite(uid)
+            if token is None:
+                await self.tg.send(cid, 'Your own Telegram account is already linked. /mychannels or /unlinktelegram. No new login needed.')
+            else:
+                text = ('🔐 LINK MY TELEGRAM ACCOUNT\n\n'
+                    f'Required matching account ID: {uid}\n\n'
+                    'This creates a FULL Telegram client authorization on this server, not a channel-only permission. The hosting operator can access server-side sessions. Link ONLY if you trust this deployment.\n\n'
+                    'Open the private HTTPS page, accept the risk, then scan its QR from Telegram Settings → Devices. If 2FA is required, the page explains it; never send a Telegram login code in bot chat.\n\n'
+                    'RAM-only link expires after one hour / restart. Revoke this device in Telegram Settings → Devices if needed. Never share this link/QR. Classplus login remains separate.')
+                await self.show_panel(cid, Panel(text, (({'text': '🔐 Open my private linking page', 'url': self.config.public_url + '/account-link#' + token},), (button('✖️ Cancel setup', 'action:cancel'),))))
+        elif cmd == '/mychannels':
+            if len(parts) != 1:
+                raise ProviderError('USE_MYCHANNELS_WITHOUT_OTHER_USER_ID')
+            nonce, channels = await self.account_links.channels(uid)
+            if not channels:
+                await self.tg.send(cid, 'No supported public admin channels returned for your account. Private channels are not enumerated. /setdestination @YourChannel still verifies both admin roles.')
+            else:
+                await self.linked_channel_page(uid, cid, nonce, 0)
+        elif cmd == '/channelpage':
+            if len(parts) != 3 or not parts[2].isdigit():
+                raise ProviderError('INVALID_CHANNEL_PAGE')
+            await self.linked_channel_page(uid, cid, parts[1], int(parts[2]), message_id)
+        elif cmd == '/usechannel':
+            if len(parts) != 3 or not parts[2].isdigit():
+                raise ProviderError('INVALID_CHANNEL_SELECTION')
+            if uid in self.jobs.active:
+                raise ProviderError('CANCEL_EXISTING_JOB_BEFORE_CHANGING_DESTINATION')
+            target = self.account_links.choose(uid, parts[1], int(parts[2]))
+            destination = await self.destinations.set(uid, target)
+            await self.tg.send(cid, f'✅ Selected destination verified: {destination.title} ({destination.chat_id}). TXT exports use this bot and go ONLY there.')
+        else:
+            return False
+        return True
+
+    async def moderation(self, uid, cid, cmd, parts, message_id=None):
+        if cmd not in ('/users', '/ban', '/unban', '/maintenance'):
+            return False
+        self.access.owner(uid)
+        if not self.config.access_consent_enabled:
+            raise ProviderError('BOT_ACCESS_CONTROLS_DISABLED')
+        if cmd == '/users':
+            if len(parts) > 2 or len(parts) == 2 and not parts[1].isdigit():
+                raise ProviderError('USE_USERS_OPTIONAL_PAGE_NUMBER')
+            page = int(parts[1]) if len(parts) == 2 else 0
+            rows = sorted(self.access.users.items()); total = max(1, (len(rows) + 19) // 20)
+            if not 0 <= page < total:
+                raise ProviderError('INVALID_USER_PAGE')
+            text = '\n\n'.join(f'{target} • consent={value["consent"]} • blocked={value["blocked"]}' for target, value in rows[page * 20:(page + 1) * 20]) or 'No users yet.'
+            controls = [(button(('Unblock ' if value['blocked'] else 'Block ') + str(target), f'admin:{"unban" if value["blocked"] else "ban"}:{target}'),) for target, value in rows[page * 20:(page + 1) * 20] if target != self.config.owner_id]
+            nav = []
+            if page: nav.append(button('⬅️ Previous', f'admin:users:{page - 1}'))
+            if page + 1 < total: nav.append(button('Next ➡️', f'admin:users:{page + 1}'))
+            if nav: controls.append(tuple(nav))
+            controls.append((button('Refresh users', f'admin:users:{page}'), button('Owner panel', 'nav:admin')))
+            await self.show_panel(cid, Panel(f'OWNER • USER REGISTRY {page + 1}/{total}\n\n{text}\n\n/users PAGE (zero-based) for more. No phone, OTP or session displayed. RAM-only registry.', tuple(controls)), message_id)
+        elif cmd in ('/ban', '/unban'):
+            if len(parts) != 2 or not parts[1].isdigit():
+                raise ProviderError('USE_BAN_OR_UNBAN_TELEGRAM_USER_ID')
+            target = int(parts[1]); self.access.block(uid, target, cmd == '/ban')
+            if cmd == '/ban':
+                self.clear_login(target); self.jobs.cancel(target); self.state.drop(target)
+                await self.account_links.unlink(target)
+            await self.tg.send(cid, f'{cmd[1:]} applied to {target}. This controls ONLY this bot, not their Telegram account globally. RAM-only moderation resets on restart/deploy.')
+        elif len(parts) == 1:
+            await self.show_panel(cid, Panel('OWNER • MAINTENANCE\n\nCurrent: ' + str(self.access.maintenance) + '\n\nEnabling pauses new user work, cancels active exports and pending login setups. Existing linked accounts can still unlink. RAM-only setting; resets on restart/deploy.', ((button('Pause new work + cancel jobs', 'admin:maintenance:on'),), (button('Resume normal access', 'admin:maintenance:off'),))), message_id)
+        elif len(parts) == 2 and parts[1] in ('on', 'off'):
+            self.access.maintenance = parts[1] == 'on'
+            if self.access.maintenance:
+                targets = set(self.jobs.active) | set(self.classplus_login.pending) | set(self.conversations.steps) | set(self.locks)
+                for target in targets:
+                    if target != self.config.owner_id:
+                        self.clear_login(target); self.jobs.cancel(target)
+                await asyncio.gather(*(self.account_links.cancel_flow(target) for target in list(self.account_links.by_user)), return_exceptions=True)
+            await self.tg.send(cid, 'Maintenance: ' + str(self.access.maintenance) + '. Logout/unlink remain available. RAM-only; resets on restart/deploy.')
+        else:
+            raise ProviderError('USE_MAINTENANCE_ON_OR_OFF')
         return True
 
     async def handle(self, update):
@@ -311,7 +436,28 @@ class Bot:
             return
         if cmd in ('/connect', '/authinput') and not already_deleted and not isinstance(callback, dict):
             await self.delete_input(cid, message.get('message_id'))
+        if self.config.access_consent_enabled:
+            try:
+                self.access.touch(uid)
+                if cmd == '/accept':
+                    self.access.consent(uid)
+                    await self.local_control(uid, cid, '/dashboard', panel_message_id)
+                    return
+                safe_panel = cmd == '/panel' and len(parts) == 2 and parts[1] in ('privacy', 'support', 'guide', 'coverage', 'home')
+                home_request = cmd in ('/start', '/home', '/xtract') or cmd == '/panel' and parts[1:] == ['home']
+                if home_request and not self.access.users[uid]['consent']:
+                    if self.access.users[uid]['blocked']:
+                        raise ProviderError('BOT_ACCESS_BLOCKED_CONTACT_OWNER')
+                    await self.show_panel(cid, access_panel(uid), panel_message_id)
+                    return
+                if not safe_panel and cmd not in ('/start', '/home', '/xtract', '/privacy', '/help', '/support', '/cancel', '/disconnect', '/logoutall', '/unlinktelegram', '/tgstatus', '/admin', '/stats', '/users', '/ban', '/unban', '/maintenance'):
+                    self.access.check(uid)
+            except ProviderError as exc:
+                await self.tg.send(cid, str(exc))
+                return
         try:
+            if await self.moderation(uid, cid, cmd, parts, panel_message_id):
+                return
             if await self.local_control(uid, cid, cmd, panel_message_id):
                 return
         except ProviderError as exc:
@@ -321,8 +467,14 @@ class Bot:
             await self.tg.send(cid, 'USER_CAPACITY_REACHED_TRY_LATER')
             return
         async with self.user_lock(uid):
+            if self.config.access_consent_enabled and not safe_panel and cmd not in ('/start', '/home', '/xtract', '/privacy', '/help', '/support', '/guide', '/capabilities', '/accept'):
+                try:
+                    self.access.check(uid)  # recheck after waiting: owner may have banned/paused meanwhile
+                except ProviderError as exc:
+                    await self.tg.send(cid, str(exc))
+                    return
             now = time.monotonic()
-            cheap = {'/start', '/home', '/xtract', '/help', '/appx', '/classplus', '/cp', '/cancel', '/disconnect', '/logoutall', '/status', '/destination', '/cleardestination', '/panel', '/login', '/free', '/tools', '/support', '/guide', '/privacy', '/capabilities', '/coursepage', '/cplogin', '/cptoken', '/cpotp', '/sendotp', '/authinput'}
+            cheap = {'/start', '/home', '/xtract', '/help', '/appx', '/classplus', '/cp', '/cancel', '/disconnect', '/logoutall', '/status', '/destination', '/cleardestination', '/panel', '/login', '/free', '/tools', '/support', '/guide', '/privacy', '/capabilities', '/coursepage', '/cplogin', '/cptoken', '/cpotp', '/sendotp', '/authinput', '/linktelegram', '/channelpage', '/usechannel', '/accept'}
             selected = self.selected.get(uid, 'classplus' if self.config.classplus_otp_enabled else 'appx')
             cached = self.course_cache.get((uid, selected))
             is_cached_courses = cmd == '/courses' and cached and cached[0] > now and cached[1] is self.state.get(uid, selected)
@@ -343,7 +495,11 @@ class Bot:
                     await self.tg.send(cid, login_error(str(exc)))
                     return
             try:
-                if cmd in ('/start', '/home', '/xtract', '/login', '/free', '/tools', '/support', '/guide', '/privacy', '/capabilities', '/panel'):
+                if cmd in ('/linktelegram', '/mychannels', '/channelpage', '/usechannel'):
+                    await self.account_action(uid, cid, cmd, parts, panel_message_id)
+                elif cmd == '/accept':
+                    await self.tg.send(cid, 'Basic Telegram identity is supplied by Telegram. /dashboard opens your private controls.')
+                elif cmd in ('/start', '/home', '/xtract', '/login', '/free', '/tools', '/support', '/guide', '/privacy', '/capabilities', '/panel'):
                     aliases = {'/start':'home','/home':'home','/xtract':'home','/login':'login','/free':'public','/tools':'tools',
                                '/support':'support','/guide':'guide','/privacy':'privacy','/capabilities':'coverage'}
                     try:
@@ -494,6 +650,7 @@ class Bot:
             self.state.purge()
             self.conversations.purge()
             self.classplus_login.purge()
+            await self.account_links.purge()
             now = time.monotonic()
             self.course_cache = {k: v for k, v in self.course_cache.items() if v[0] > now}
             active = {u for u, _ in self.state.connections} | set(self.jobs.active) | set(self.conversations.steps) | set(self.classplus_login.pending) | set(self.locks)
@@ -512,6 +669,7 @@ class Bot:
             task.cancel()
         await asyncio.gather(*self.workers, return_exceptions=True)
         await self.jobs.close()
+        await self.account_links.close()
         while not self.updates.empty():
             self.updates.get_nowait()
             self.updates.task_done()
@@ -536,7 +694,7 @@ def create_app(config, bot, runtime=None):
             current['startup'] = 'TELEGRAM_TRANSPORT_DISCONNECTED'
         return current
     async def health(request):
-        return web.json_response({'service': 'independent-extractor', 'version': '0.4.0-dev', 'status': 'process-alive', 'providers': {'appx': 'limited-test-mvp' if config.appx_hosts else 'disabled-no-approved-host', 'classplus': 'reference-compatible-live-account-unverified'}, 'persistent_jobs': False, 'features': {'classplus_token': True, 'classplus_otp': config.classplus_otp_enabled, 'user_dashboard': True, 'owner_panel': bool(config.owner_id), 'priority_controls': True, 'course_display_cache_seconds': 20}, **readiness()})
+        return web.json_response({'service': 'independent-extractor', 'version': '0.5.0-dev', 'status': 'process-alive', 'providers': {'appx': 'limited-test-mvp' if config.appx_hosts else 'disabled-no-approved-host', 'classplus': 'reference-compatible-live-account-unverified'}, 'persistent_jobs': False, 'features': {'classplus_token': True, 'classplus_otp': config.classplus_otp_enabled, 'user_dashboard': True, 'owner_panel': bool(config.owner_id), 'priority_controls': True, 'course_display_cache_seconds': 20, 'telegram_account_link': config.telegram_link_enabled, 'bot_access_consent': config.access_consent_enabled}, **readiness()})
     async def ready(request):
         current = readiness()
         return web.json_response(current, status=200 if current['ready'] else 503)
@@ -579,6 +737,7 @@ def create_app(config, bot, runtime=None):
         runtime['identity_verified'] = False
         runtime['quiesced'] = True
         return web.json_response({'quiesced': True})
+    add_link_portal(app, config, bot)
     app.router.add_post('/ops/quiesce', quiesce)
     app.router.add_get('/healthz', health)
     app.router.add_get('/readyz', ready)

@@ -23,6 +23,8 @@ class Config:
     owner_ready_notice: bool = False
     startup_paused: bool = False
     classplus_otp_enabled: bool = False
+    telegram_link_enabled: bool = False
+    access_consent_enabled: bool = False
 
     @classmethod
     def from_env(cls, env=None):
@@ -59,6 +61,7 @@ class Config:
             raise ConfigError('OWNER_ID must be a numeric Telegram user ID.') from None
         if owner < 0:
             raise ConfigError('OWNER_ID cannot be negative.')
+        link_enabled = e.get('TELEGRAM_ACCOUNT_LINK_ENABLED', 'false').lower() == 'true'
         transport = e.get('TELEGRAM_TRANSPORT', 'botapi').strip().lower()
         if transport not in ('botapi', 'mtproto'):
             raise ConfigError('TELEGRAM_TRANSPORT must be botapi or mtproto.')
@@ -72,7 +75,16 @@ class Config:
             bot_session = e.get('TELEGRAM_BOT_SESSION', '').strip()
             if api_id <= 0 or not re.fullmatch(r'[a-fA-F0-9]{32}', api_hash) or not 100 <= len(bot_session) <= 2048:
                 raise ConfigError('Explicit authorized bot-only MTProto credentials/session required.')
+        if link_enabled and not api_id:
+            try:
+                api_id = int(e.get('TELEGRAM_API_ID', '0'))
+            except ValueError:
+                raise ConfigError('TELEGRAM_API_ID must be numeric.') from None
+            api_hash = e.get('TELEGRAM_API_HASH', '').strip()
+            if api_id <= 0 or not re.fullmatch(r'[a-fA-F0-9]{32}', api_hash):
+                raise ConfigError('Own-app credentials required for separate account linking.')
         return cls(token, secret, url, username, hosts, port, e.get('SET_WEBHOOK', 'false').lower() == 'true', owner,
                    transport, api_id, api_hash, bot_session, e.get('OWNER_READY_NOTICE', 'false').lower() == 'true',
                    e.get('TELEGRAM_START_PAUSED', 'false').lower() == 'true',
-                   e.get('CLASSPLUS_OTP_ENABLED', 'false').lower() == 'true')
+                   e.get('CLASSPLUS_OTP_ENABLED', 'false').lower() == 'true', link_enabled,
+                   e.get('BOT_ACCESS_CONSENT_ENABLED', 'false').lower() == 'true')

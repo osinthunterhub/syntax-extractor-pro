@@ -1,7 +1,4 @@
-v0.4.0-dev:319 synthetic regression tests PASS0.57s; app Pyflakes/diff clean.
-CI45363068720: Python3.12/3.13 SUCCESS.
-Deploydep-dc2lakcs728c73auom80: LIVE; readiness200; identity/handlers and OTP/dashboard/control flags verified.
-All registered command routes and complete fake OTP->course->selected-channel tests pass.
-Priority controls served while4regular requests deliberately stalled;1000users no stale lock cap.
-Only actual provider probe: nonexistent org GET rejected, NO real SMS sent.
-Valid-account SMS/OTP/course export/actual channel document NOT yet verified.
+v0.5.0-dev:355 offline synthetic regression tests PASS (Python3.13,0.66s).
+App Pyflakes clean; git diff --check clean; embedded portal JavaScript node --check clean.
+Tests use fake QR/2FA clients; NO real account QR login, Telegram 2FA, SMS or channel delivery.
+CI/live deployment evidence recorded separately.

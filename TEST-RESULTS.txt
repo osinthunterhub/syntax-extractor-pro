@@ -1,5 +1,6 @@
-v0.3.3-dev:235 synthetic regression tests PASS0.47s; production app Pyflakes clean.
-Classplus source-format compatibility, auth/locking and selected-channel stub flow tested.
-Actual adapter with synthetic INVALID token correctly reported ACCESS_DENIED.
-Live valid-account/course-export/channel-file verification remains unperformed.
-CI and runtime deploy evidence recorded separately after verification.
+v0.3.3-dev:235 synthetic regression tests PASS0.47s; app Pyflakes clean.
+CI45360158857: Python3.12/3.13 SUCCESS.
+Final deploydep-dc2l1hss728c73au0vp0: LIVE /readyz200, identity/handlers verified.
+Actual synthetic-invalid-token HTTP probe -> ACCESS_DENIED as expected.
+Reference-format own-account/course/channel stub end-to-end test PASS.
+Real valid-account/course export/channel document delivery NOT yet tested.

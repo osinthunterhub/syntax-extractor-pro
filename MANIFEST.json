@@ -22,8 +22,8 @@
       "sha256": "2e555fd65f79a154fcb3b6f0d4cc0ac08b323dc24a7af7dd43dca212ca0ee80f"
     },
     "DEPLOYMENT-STATUS.md": {
-      "bytes": 3220,
-      "sha256": "482d91ae59c37277563308532d60a9c1daeaf48e846572a07435942aed190312"
+      "bytes": 2656,
+      "sha256": "b77865dfaa24e5fda1ee2924d15381e1d3bfbfe9e5f0903bfc6ea0c6513b5934"
     },
     "PROVIDER-UPGRADE-v0.3.2.md": {
       "bytes": 4473,
@@ -50,8 +50,8 @@
       "sha256": "bac73f2eb9fdd5b9d9a546a2b0d7f536c8c580b612b33bc7c8feba73585ebc34"
     },
     "TEST-RESULTS.txt": {
-      "bytes": 404,
-      "sha256": "70749c05a60f0a05caf7fab28d746e940927d47249f159662102149d2a16f9ce"
+      "bytes": 414,
+      "sha256": "472e5146cdd15c3adbbaa923aa458566dc6c064e368f7f1627474ea05a679926"
     },
     "app/__init__.py": {
       "bytes": 84,

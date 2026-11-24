@@ -305,3 +305,63 @@ def test_unconfigured_appx_menu_gives_setup_status():
         await bot.handle({'message':{'from':{'id':77},'chat':{'id':77,'type':'private'},'text':'/appx'}})
         assert any('setup pending' in text for text in tg.messages)
     run(case())
+
+
+def test_telegram_rate_limit_safe_error_without_description_or_secret():
+    from app.telegram import Telegram, TelegramRateLimited
+    async def case():
+        response=Response(429,b'{"ok":false,"description":"never-echo-this-secret","parameters":{"retry_after":10}}')
+        with pytest.raises(TelegramRateLimited) as error:
+            await Telegram(Session(response),'synthetic-token').call('getMe')
+        assert error.value.retry_after==10
+        assert str(error.value)=='TELEGRAM_RATE_LIMITED_RETRY_AFTER_10'
+    run(case())
+
+
+def test_telegram_non_success_safe_status_diagnostic():
+    from app.telegram import Telegram
+    async def case():
+        with pytest.raises(ProviderError,match='HTTP_401') as error:
+            await Telegram(Session(Response(401,b'{"ok":false,"description":"secret"}')),'synthetic-token').call('getMe')
+        assert 'secret' not in str(error.value)
+    run(case())
+
+
+def test_telegram_identity_retry_honors_server_wait_and_is_bounded():
+    from app.telegram import verified_identity, TelegramRateLimited
+    async def case():
+        class Limited:
+            def __init__(self):self.calls=[]
+            async def call(self,method):self.calls.append(method);raise TelegramRateLimited(10)
+        tg=Limited();waits=[]
+        async def sleep(delay):waits.append(delay)
+        with pytest.raises(TelegramRateLimited):await verified_identity(tg,'IndependentTestBot',sleep=sleep)
+        assert tg.calls==['getMe']*3 and waits==[11,11]
+    run(case())
+
+
+def test_telegram_identity_retry_success_and_mismatch_guard():
+    from app.telegram import verified_identity, TelegramRateLimited
+    async def case():
+        class Identity:
+            def __init__(self,name):self.name=name;self.calls=0
+            async def call(self,method):
+                self.calls+=1
+                if self.calls==1:raise TelegramRateLimited(1)
+                return {'id':55,'username':self.name,'is_bot':True}
+        async def sleep(delay):assert delay==2
+        assert (await verified_identity(Identity('IndependentTestBot'),'IndependentTestBot',sleep=sleep))['id']==55
+        with pytest.raises(ProviderError,match='IDENTITY_MISMATCH'):
+            await verified_identity(Identity('WrongBot'),'IndependentTestBot',sleep=sleep)
+    run(case())
+
+
+@pytest.mark.parametrize('value',[True,-1,0,'10'])
+def test_telegram_malformed_retry_metadata_not_trusted(value):
+    from app.telegram import Telegram
+    import json
+    async def case():
+        response=Response(429,json.dumps({'ok':False,'parameters':{'retry_after':value}}).encode())
+        with pytest.raises(ProviderError,match='RATE_LIMITED_RETRY_LATER'):
+            await Telegram(Session(response),'synthetic-token').call('getMe')
+    run(case())

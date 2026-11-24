@@ -1,25 +1,20 @@
-# Deployment handoff — no secrets
+# Deployment status (no secrets)
 
-Bot target: @SyntaxExtractProBot. Bot API identity not verified yet: sandbox
-requests encountered Telegram 429 retry-after responses and timeouts.
-Startup getMe identity check remains mandatory before any webhook registration.
+Public source repo https://github.com/osinthunterhub/syntax-extractor-pro
+User delegated automatic choice after private repository access failed.
+Full reachable Git blob history scanned for supplied credentials before public.
 
-Private repository: https://github.com/osinthunterhub/syntax-extractor-pro
-Initial commit: a46ed4ffd6da9cdd94218cb1a3b6a466c26248b5
-CI: https://github.com/osinthunterhub/syntax-extractor-pro/actions/runs/45343096784
-Python 3.12 and 3.13 jobs both SUCCESS; local suite 74 PASS.
+NEW service srv-dc2j83uc6qcc73f732fg; plan FREE; Singapore; Python3.12.12.
+https://syntax-extract-pro.onrender.com
+https://dashboard.render.com/web/srv-dc2j83uc6qcc73f732fg
+Initial deploy dep-dc2j846c6qcc73f733e0: build succeeded, startup update failed
+because Telegram getMe rejected. Sandbox probes received429/timeouts.
+Service paused to prevent restart-driven requests during throttle troubleshooting.
+Startup now honors retry_after with bounded getMe retries; no send retries.
+Identity check cannot be bypassed. No webhook changed.
 
-Render credentials authenticated. Existing services untouched. A NEW free
-Singapore web service request was rejected HTTP 400: private repository
-unfetchable. No new service ID/deploy exists. No paid request attempted.
-Next: allow Render GitHub app access to only syntax-extractor-pro, or obtain
-user permission to publish secret-free code repository publicly.
-https://github.com/apps/render/installations/new
-https://dashboard.render.com/u/settings#account-security
-
-Planned service name syntax-extract-pro; region Singapore; free plan only;
-start python -m app; health /healthz. Use actual assigned HTTPS URL, not an
-assumed hostname, for PUBLIC_BASE_URL. SET_WEBHOOK false until identity verified.
-APPX_API_HOSTS empty intentionally disables AppX until coaching host approved.
-All ordinary users allowed; owner-only metadata stats configured at runtime.
-No live provider extraction or channel delivery has been tested.
+Previous74-test CI run45343096784: Python3.12/3.13 both success.
+New82-test startup patch CI/deployment still pending verification.
+No real provider/channel tests. AppX intentionally disabled until host approved.
+All ordinary users allowed; owner-only stats runtime configured.
+No old services touched; no paid plan selected or payment authorized.

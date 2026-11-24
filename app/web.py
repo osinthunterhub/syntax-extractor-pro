@@ -10,7 +10,7 @@ from .state import State, Connection
 from .providers import AppX, Classplus, ProviderRouter, ProviderError, PublicResolver
 from .destinations import Destinations
 from .jobs import Jobs
-from .telegram import Telegram
+from .telegram import Telegram, verified_identity
 
 HELP = '''Syntax Extractor Pro — v0.2.1-dev, mock-tested; live verification pending.
 AppX and Classplus have separate account connections.
@@ -282,9 +282,7 @@ async def application():
     bot = None
     try:
         tg = Telegram(session, config.bot_token)
-        me = await tg.call('getMe')
-        if not isinstance(me, dict) or not isinstance(me.get('id'), int) or str(me.get('username', '')).lower() != config.expected_username.lower():
-            raise ProviderError('BOT_IDENTITY_MISMATCH_NO_WEBHOOK_CHANGED')
+        me = await verified_identity(tg, config.expected_username)
         providers = {'appx': AppX(session, config.appx_hosts), 'classplus': Classplus(session)}
         bot = Bot(config, tg, providers, me.get('id', 0))
         app = create_app(config, bot)

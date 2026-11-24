@@ -3,6 +3,29 @@ import json
 import aiohttp
 from .providers import ProviderError
 
+class TelegramRateLimited(ProviderError):
+    def __init__(self, retry_after):
+        self.retry_after = retry_after
+        super().__init__(f'TELEGRAM_RATE_LIMITED_RETRY_AFTER_{retry_after}')
+
+
+async def verified_identity(tg, expected_username, attempts=3, sleep=asyncio.sleep):
+    # Only idempotent getMe is retried, never a possibly accepted file/message send.
+    for attempt in range(attempts):
+        try:
+            me = await tg.call('getMe')
+            break
+        except TelegramRateLimited as exc:
+            if attempt + 1 >= attempts or not 1 <= exc.retry_after <= 120:
+                raise
+            await sleep(exc.retry_after + 1)
+    if (not isinstance(me, dict) or not isinstance(me.get('id'), int)
+            or isinstance(me.get('id'), bool) or me.get('is_bot') is not True
+            or str(me.get('username', '')).lower() != expected_username.lower()):
+        raise ProviderError('BOT_IDENTITY_MISMATCH_NO_WEBHOOK_CHANGED')
+    return me
+
+
 class Telegram:
     def __init__(self, session, token):
         self.session, self._token = session, token
@@ -15,8 +38,6 @@ class Telegram:
             async with self.session.post(f'https://api.telegram.org/bot{self._token}/{method}',
                     json=payload if form is None else None, data=form,
                     allow_redirects=False, timeout=aiohttp.ClientTimeout(total=35, connect=8)) as response:
-                if response.status != 200:
-                    raise ProviderError('TELEGRAM_REQUEST_REJECTED')
                 chunks, size = [], 0
                 async for chunk in response.content.iter_chunked(16384):
                     size += len(chunk)
@@ -24,8 +45,16 @@ class Telegram:
                         raise ProviderError('TELEGRAM_RESPONSE_TOO_LARGE')
                     chunks.append(chunk)
                 result = json.loads(b''.join(chunks))
-                if not result.get('ok'):
-                    raise ProviderError('TELEGRAM_REQUEST_REJECTED')
+                if not isinstance(result, dict):
+                    raise ProviderError('TELEGRAM_SCHEMA_UNSUPPORTED')
+                if response.status == 429:
+                    params = result.get('parameters')
+                    retry = params.get('retry_after', 0) if isinstance(params, dict) else 0
+                    if not isinstance(retry, int) or isinstance(retry, bool) or retry < 1:
+                        raise ProviderError('TELEGRAM_RATE_LIMITED_RETRY_LATER')
+                    raise TelegramRateLimited(retry)
+                if response.status != 200 or not result.get('ok'):
+                    raise ProviderError(f'TELEGRAM_HTTP_{response.status}_REQUEST_REJECTED')
                 return result.get('result')
         except ProviderError:
             raise

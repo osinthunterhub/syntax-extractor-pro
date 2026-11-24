@@ -18,12 +18,12 @@
       "sha256": "f01d748a75eb195e6fd73201279bfb23f09036ddd360eb3e9ff40ef042acbc8a"
     },
     "DEPLOYMENT-STATUS.md": {
-      "bytes": 1465,
-      "sha256": "1d22edd72bbb5433d72988c82f27ef4498d814ec1fbeeb41141839589f74212f"
+      "bytes": 1147,
+      "sha256": "a6d010b0bb8dc11c6351bd2cdfdf2d1335305d87f7bdce67f887bf6a28f1bafb"
     },
     "README.md": {
-      "bytes": 9795,
-      "sha256": "912739743a4148d675180b10937a75c59c092e77009914bf971a6d99dfa01c93"
+      "bytes": 10044,
+      "sha256": "3e86a610e8878a031275fa2b61cca4151800db063680c32bce5438eeace6f507"
     },
     "REFERENCE-COMMAND-INVENTORY.csv": {
       "bytes": 2894,
@@ -38,8 +38,8 @@
       "sha256": "f61201f5abdc7fa916cbef2d487e558e63d5947054dd2624533474a30dbc2275"
     },
     "TEST-RESULTS.txt": {
-      "bytes": 263,
-      "sha256": "b70a9b9b49826005238a335083d709308117fb00b27ecf3e537ebc13dc94574f"
+      "bytes": 275,
+      "sha256": "8a4ff3c4e52850622252144be3bf24dd84573c9ed82120999967a0e3c3403b02"
     },
     "app/__init__.py": {
       "bytes": 84,
@@ -86,12 +86,12 @@
       "sha256": "521226b25aa51ecd6febfefa0e66bf17b5aa815acded0b40c5039b9f0398bfcf"
     },
     "app/telegram.py": {
-      "bytes": 3203,
-      "sha256": "490deb1b54f83bbeed629cf4f6e232371abafc0e4755e09cb9b51bf39c71ecfa"
+      "bytes": 4652,
+      "sha256": "303601d715193ce08f89e24529d09728079a2c480aa3e2dd1eec07d10a4a7f77"
     },
     "app/web.py": {
-      "bytes": 17529,
-      "sha256": "c6b5cfdff7c473a0efaef5cfb4884842b4a402671d2ea29f98534da98f8a0036"
+      "bytes": 17354,
+      "sha256": "2422507fa3b6beaea7ae2e1858450f1cbb4516fa91b4d40d4a40443280dbd7fa"
     },
     "render.yaml": {
       "bytes": 522,
@@ -110,8 +110,8 @@
       "sha256": "71ec1ee1645420d1b2ad9beeeda6b4d3086b5b261ad03dbec251d3a7c280fb7d"
     },
     "tests/test_upgrade.py": {
-      "bytes": 13796,
-      "sha256": "d994976b8d85ee117263ee870144f50c93d8735f49fb5f804b291164469b61d4"
+      "bytes": 16543,
+      "sha256": "c5f31994f6d59820ee310573bd8a06361af83f6cc2bd8a7ba72e1b4df6836e22"
     }
   }
 }

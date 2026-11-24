@@ -1,6 +1,5 @@
-Syntax Extractor Pro v0.2.1-dev
-Python 3.13.18
-74 passed in 0.77s (local mock/local HTTP tests)
-Production pyflakes app: PASS
-Live provider APIs not tested. Hosted CI/deployment tracked separately.
-GitHub CI 45343096784: Python 3.12 SUCCESS; Python 3.13 SUCCESS.
+Syntax Extractor Pro v0.2.1-dev startup patch
+Local Python3.13.18: 82 passed in0.33s
+App pyflakes clean. Prior74-test revision passed CI3.12+3.13.
+New patch CI pending. Render build3.12.12 succeeded; startup Telegram429.
+No real provider extraction or channel delivery test.

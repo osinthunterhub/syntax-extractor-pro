@@ -1,6 +1,6 @@
 # Independent Extractor — v0.2.1-dev
 
-**Separate new project. AppX + Classplus adapters. 74 local/mock tests. Not deployed,
+**Separate new project. AppX + Classplus adapters. 82 local/mock tests. Not deployed,
 not a claim of A–Z parity, real provider compatibility or fastest performance.**
 
 The existing `@TurboForwarderPro_Bot`, its credentials, sessions, settings and hosting
@@ -70,7 +70,7 @@ Do not share files publicly unless you have permission to distribute the content
 
 ## Important limits / not yet production
 
-**Private repository created: osinthunterhub/syntax-extractor-pro. Render service creation is blocked on repository access; no webhook changed.**
+**Public source repository: osinthunterhub/syntax-extractor-pro. New FREE Render service created; Telegram startup identity verification pending; no webhook changed.**
 No real provider login, OTP, Telegram bot integration or course export was performed.
 The API protocols are reference-informed, not verified with provider developer docs.
 Search did not establish an authoritative public Classplus/AppX purchased-course API
@@ -111,7 +111,7 @@ python -m pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
-74 tests pass under local Python 3.13. Production module Pyflakes check is clean.
+82 tests pass under local Python 3.13. Production module Pyflakes check is clean.
 GitHub CI passed for Python 3.12 + 3.13 (run 45343096784). Python 3.12 hosted deployment runtime,
 Render build and live APIs remain unverified. `TEST-RESULTS.txt` records actual local
 results. All provider requests are mocked; local webhook HTTP tests run only locally.
@@ -155,3 +155,7 @@ An empty APPX_API_HOSTS now starts safely with AppX disabled; its menu reports s
 pending until an authorized coaching host is approved. No wildcard or guessed host.
 Owner is configured only in runtime environment; ordinary user access remains open.
 Provider live verification remains pending.
+
+Startup getMe retries Telegram 429 at most three attempts, honoring retry_after
+(up to 120 seconds); sending messages/files is never automatically retried.
+Full Git history was scanned for supplied secrets before publication.

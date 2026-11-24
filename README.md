@@ -1,12 +1,13 @@
 # Independent Extractor — v0.3.1-dev
 
-**Separate new project. AppX + Classplus adapters. 159 local/mock tests. Web service deployed; Telegram activation blocked,
+**Separate new project. AppX + Classplus adapters. 159 local/mock tests. Telegram bot active through official bot-only MTProto,
 not a claim of A–Z parity, real provider compatibility or fastest performance.**
 
 The existing `@TurboForwarderPro_Bot`, its credentials, sessions, settings and hosting
 are out of scope and untouched. This code refuses that bot username. No old-account
-credentials are bundled or automatically reused. This Bot API design does not need
-Telegram API ID/hash or a phone-number login.
+credentials are bundled or automatically reused. The default Bot API transport needs no API ID/hash. The optional deployed MTProto
+bot transport uses the user-provided API ID/hash plus a NEW bot-only session, never
+a personal account or phone-number login.
 
 ## What's implemented and tested locally
 
@@ -70,7 +71,7 @@ Do not share files publicly unless you have permission to distribute the content
 
 ## Important limits / not yet production
 
-**Public source repository: osinthunterhub/syntax-extractor-pro. New FREE Render service created; Telegram startup identity verification pending; no webhook changed.**
+**Public source repository: osinthunterhub/syntax-extractor-pro. New FREE Render service created; Telegram identity and MTProto transport now verified; HTTP webhook intentionally disabled.**
 No real provider login, OTP, Telegram bot integration or course export was performed.
 The API protocols are reference-informed, not verified with provider developer docs.
 Search did not establish an authoritative public Classplus/AppX purchased-course API
@@ -244,3 +245,17 @@ not falsely mark the bot unusable. Default false to avoid repeated startup notic
 159 local tests pass, including transport-to-worker command/callback integration,
 wrong/personal-session rejection, live-socket readiness, permission checks, numeric
 ID normalization and overload/dedup. Real provider exports remain live-unverified.
+
+## LIVE v0.3.1 result
+Telegram connection is ready, identity verified, incoming handlers installed.
+Official bot-only MTProto; HTTP webhook=false is intentional.
+Deployed code `f32a7042c28be757113b670546d70245f3d1d2af`; deploy `dep-dc2kcaec6qcc73fa44r0`.
+CI 45353541407: Python3.12 and3.13 SUCCESS;159 local tests PASS.
+Observed actual incoming updates and successful outgoing Telegram operations,
+not just a liveness check or mocked test. Provider exports remain unverified.
+
+**Free-host limitation:** Render can idle/suspend Free web services. In MTProto
+mode an incoming Telegram socket message does NOT make an HTTP request to wake a
+sleeping Render instance. This workaround is therefore not an always-on guarantee.
+No self-ping/quota-evasion service is included. Prefer restoring Bot API webhook
+mode (after verifying cloud recovery) for webhook-triggered wake-up.

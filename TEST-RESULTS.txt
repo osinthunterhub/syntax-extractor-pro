@@ -1,3 +1,4 @@
-v0.3.1 local:159 tests PASS1.30s Python3.13; app pyflakes clean.
-Live isolated bot-only authorization/get_me matched expected new bot ID/username/is_bot on DC5.
-CI and Render transport integration pending. No live provider export/channel-delivery test.
+v0.3.1:159 tests PASS1.30s local Python3.13; app pyflakes clean.
+CI45353541407: Python3.12 and3.13 both SUCCESS.
+Live same-bot MTProto identity verified; /readyz200 and handlers active.
+Actual incoming/outgoing Telegram traffic observed. Provider exports NOT tested live.

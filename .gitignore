@@ -4,3 +4,9 @@ __pycache__/
 .pytest_cache/
 .venv/
 *.txt.export
+
+# Never commit Telegram authorization/session material
+*.session
+*.session-*
+.env.*
+!.env.example

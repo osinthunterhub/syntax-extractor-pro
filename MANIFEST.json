@@ -10,20 +10,20 @@
       "sha256": "46d09d28fcda14dcbd4d81a39d5a9cbaced7de277c84ea2731d70216b0803317"
     },
     ".gitignore": {
-      "bytes": 64,
-      "sha256": "10e3466367a47cb3f75564147377389de55ade198c2be867fec72009cded299d"
+      "bytes": 163,
+      "sha256": "3414b532dd1de13558c9b794a3a93a3364009540e92d32433b20d2e0307d40e3"
     },
     ".python-version": {
       "bytes": 8,
       "sha256": "f01d748a75eb195e6fd73201279bfb23f09036ddd360eb3e9ff40ef042acbc8a"
     },
     "DEPLOYMENT-STATUS.md": {
-      "bytes": 594,
-      "sha256": "4f8a35fbeef47d04564795e540338815cc565dcabed5bbfb57f2813b4e7d0694"
+      "bytes": 1791,
+      "sha256": "b43ba9b8a83029ed0029bab1123244965b21da91e77ae95be7ea6f2bb1500744"
     },
     "README.md": {
-      "bytes": 15653,
-      "sha256": "80a9abb98e98995f5f09e8e379a6326c0bd9437e7caf2842588061ce50c870f4"
+      "bytes": 16680,
+      "sha256": "e1d1583dcb831a703a3ea414df7f502359d39a2aee14e25a0a992c27a3195179"
     },
     "REFERENCE-COMMAND-INVENTORY.csv": {
       "bytes": 2894,
@@ -42,8 +42,8 @@
       "sha256": "bac73f2eb9fdd5b9d9a546a2b0d7f536c8c580b612b33bc7c8feba73585ebc34"
     },
     "TEST-RESULTS.txt": {
-      "bytes": 253,
-      "sha256": "bb3f19642b2285e542cee12a1729f5624f785863f9bf1779147baf001d610468"
+      "bytes": 272,
+      "sha256": "4dafd81303f99691c8341891bdc0fe39d59f6c30ea6f5ab581ed365c9207bfd4"
     },
     "app/__init__.py": {
       "bytes": 84,

@@ -160,7 +160,7 @@ def guide_panel():
 
 def privacy_panel():
     return Panel('🛡️ PRIVACY & LIMITS\n━━━━━━━━━━━━━━━━━━━━\n'
-        '• Own token or Classplus account OTP; no passwords/shared accounts.\n\n'
+        '• Provider login: own token or Classplus OTP; no provider passwords/shared accounts.\n\n'
         '• Sessions isolated by user and provider; RAM-only, one-hour connection TTL.\n'
         '• Login-message deletion is best-effort, not secure erasure.\n\n'
         '• OTP setup: own phone/challenge in RAM; 5-minute step expiry, periodic cleanup.\n'
@@ -168,7 +168,11 @@ def privacy_panel():
         '• Jobs retain a token snapshot until stopped.\n'
         '• No raw token logs, log-channel copies or central export archive.\n'
         '• Signed URLs are sensitive; share only with permission.\n'
-        '• /disconnect selected account; /logoutall both accounts.\n'
+        '• Optional /linktelegram creates a FULL Telegram authorization, not channel-only permissions. Trust the server operator before linking.\n'
+        '• QR/2FA uses the private HTTPS portal only. Operator can access server sessions and processes 2FA transiently. Never send Telegram codes/passwords in bot chat.\n'
+        '• Telegram links are RAM-only for one hour; crash/network logout can fail. Revoke in Telegram Settings → Devices.\n'
+        '• Bot-access registry and owner moderation are RAM-only and reset on restart.\n'
+        '• /disconnect selected provider; /logoutall provider accounts + extra Telegram link.\n'
         '• /cleardestination forgets channel and requests job cancellation.', (navigation('tools'),))
 
 
@@ -179,7 +183,8 @@ def coverage_panel():
         '✅ Local logic: separate accounts, channel checks, queue, cancel/progress and navigation.\n'
         '⏳ Other institutes/public sources: catalog only, no adapters enabled.\n'
         '🧪 Classplus OTP: org/mobile/OTP flow implemented; real account verification pending.\n\n'
-        '❌ Not included: DRM decryption, login-free premium, password login, general Telegram media relay, DB/resume.\n\n'
+        '🧪 Optional Telegram QR/2FA + own public admin channels: implemented; real login unverified.\n\n'
+        '❌ Not included: DRM decryption, login-free premium, provider-password login, general Telegram media relay, DB/resume.\n\n'
         'No A–Z parity or speed claim. Mock tests are not live integration certification.', (
         (button('🔐 Account access', 'ui:login'), button('🌐 Public / Free', 'ui:public')),
         navigation('tools')))

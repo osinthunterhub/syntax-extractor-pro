@@ -8,7 +8,7 @@ RAM-only sessions; Telegram Settings → Devices can revoke the new authorizatio
 Owner `/admin` now has user block/unblock and maintenance controls; RAM-only.
 Old forwarding bot/session untouched. Classplus token+OTP remains separate.
 
-355 offline synthetic tests pass. Actual QR/2FA/account-channel workflows and real
+356 offline synthetic tests pass. Actual QR/2FA/account-channel workflows and real
 Classplus SMS/OTP/course export remain live-unverified. See
 TELEGRAM-LINK-v0.5.0-STATUS.md for concrete scope, safety and limits. Free hosting
 can sleep; AppX remains disabled. Deployment evidence recorded separately.

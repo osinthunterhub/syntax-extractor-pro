@@ -333,3 +333,10 @@ def test_owner_user_panel_buttons_route_and_recheck_actor_authorization():
         await b.handle(cb(77));assert b.access.users[1]['blocked']
         await b.close()
     run(case())
+
+
+def test_privacy_discloses_full_authorization_operator_and_revocation_limits():
+    from app.ui import privacy_panel
+    text=privacy_panel().text
+    assert 'FULL Telegram authorization' in text and 'Operator can access server sessions' in text
+    assert 'Revoke in Telegram Settings' in text and '2FA transiently' in text

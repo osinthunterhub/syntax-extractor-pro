@@ -10,8 +10,8 @@
       "sha256": "f61201f5abdc7fa916cbef2d487e558e63d5947054dd2624533474a30dbc2275"
     },
     "COMMAND-COVERAGE-v0.5.0.csv": {
-      "bytes": 3810,
-      "sha256": "c3fbff6d61bd8bd10a79815c255c93566f44df6dd6b433bcb5fe092d67e6f7b0"
+      "bytes": 3772,
+      "sha256": "83a3ced7853878256d82c488cb2d1ea3467e06c87c0c150e56d53be4272e3fb2"
     },
     "CLASSPLUS-v0.3.3-STATUS.md": {
       "bytes": 4186,
@@ -23,7 +23,7 @@
     },
     "TELEGRAM-LINK-v0.5.0-STATUS.md": {
       "bytes": 5119,
-      "sha256": "c3dc1a3a71f12ec26e167afb3bb08833b299a05aec878990b858a36eb1266c88"
+      "sha256": "f4efda312bbc285bf43f65e3ab1e3603fd28ade3621c3972be93c05e3ff0fb56"
     },
     "LOGIN-DASHBOARD-v0.4.0-STATUS.md": {
       "bytes": 6743,
@@ -43,7 +43,7 @@
     },
     "README.md": {
       "bytes": 20979,
-      "sha256": "187f4c14c9b181c871f844f924b67601d47c5f035323858c6984d11f06e0f442"
+      "sha256": "62b8c0abd6e4667228810f07c953e1a7dc610aab361f869426a2ff8ad360b3f0"
     },
     ".env.example": {
       "bytes": 1122,
@@ -67,7 +67,7 @@
     },
     "TEST-RESULTS.txt": {
       "bytes": 311,
-      "sha256": "1e3e9f44fea60f01b2c7f20b7039dfd755458ac903616100095efee1584f03b3"
+      "sha256": "0098933a508238347e496b97a454df13367b19b7d92e0c4fa6dc630a24bde3f2"
     },
     "REFERENCE-COMMAND-INVENTORY.csv": {
       "bytes": 2894,
@@ -82,12 +82,12 @@
       "sha256": "690d87cd929eaf9164b6a00f0d47350d091f0edb425d812bf7f1271c9894e857"
     },
     "app/ui.py": {
-      "bytes": 19641,
-      "sha256": "008f5a77468ac131baa66e00f21587bc8344afffd51a78398762b3768ef06086"
+      "bytes": 20350,
+      "sha256": "4106bc716a8cfbb30f488b9cfc7db54c8a72a0f0a146f6045d40d30c7a0f223e"
     },
     "app/web.py": {
-      "bytes": 52072,
-      "sha256": "3d9c05e08136ea6d8da0f4d28a1dea6ff244f33bef9640ce5a74b1347afd58ae"
+      "bytes": 52172,
+      "sha256": "217fed8c2b2fd8974d89c1f40e96b85c4844f68c90f165158d8d14a20e2b9cbc"
     },
     "app/__main__.py": {
       "bytes": 701,
@@ -162,8 +162,8 @@
       "sha256": "c2d442c2949e27c1a98abb4c605b0fa47afb4c8f13961e6950127d2ecd1e4225"
     },
     "tests/test_account_links.py": {
-      "bytes": 16056,
-      "sha256": "9a3d1041e5415b9612b8f0f00f777bdc55bed4cd17c8627a9494043c6f015f44"
+      "bytes": 16383,
+      "sha256": "45c1b23f6cbd547953fd9d868abbaabd06a8c891bd7fc4a3ac51adb34abf4eda"
     },
     "tests/test_upgrade.py": {
       "bytes": 20018,

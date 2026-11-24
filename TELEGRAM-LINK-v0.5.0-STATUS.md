@@ -53,7 +53,7 @@ As with any bearer, do not share private link or QR. Telegram/cloud chat may ret
 bot link messages; RAM-only does not erase Telegram's copies.
 
 ## Executed verification
-355 offline synthetic regression tests pass locally (Python 3.13); app Pyflakes,
+356 offline synthetic regression tests pass locally (Python 3.13); app Pyflakes,
 git diff whitespace and embedded portal JavaScript syntax checks pass. Dedicated
 fake native QR/2FA tests cover consent-before-connect, own-ID/bot rejection,
 success/unlink, no old-session import, two-step success/failure, capacity/expiry,

@@ -1,4 +1,4 @@
-v0.5.0-dev:355 offline synthetic regression tests PASS (Python3.13,0.66s).
+v0.5.0-dev:356 offline synthetic regression tests PASS (Python3.13,0.66s).
 App Pyflakes clean; git diff --check clean; embedded portal JavaScript node --check clean.
 Tests use fake QR/2FA clients; NO real account QR login, Telegram 2FA, SMS or channel delivery.
 CI/live deployment evidence recorded separately.

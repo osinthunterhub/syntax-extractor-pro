@@ -62,7 +62,8 @@ HELP = """⚡ SYNTAX EXTRACTOR PRO
 /maintenance on|off — RAM-only access control
 
 Classplus OTP requires explicit SMS confirmation; never send a Telegram code.
-No passwords, shared accounts, automatic registration or DRM bypass.
+No provider passwords, shared accounts, automatic registration or DRM bypass.
+Optional Telegram 2FA belongs ONLY on the disclosed private HTTPS linking portal.
 RAM-only settings reset on restart. Secret-message deletion is best-effort.
 Real provider-account exports remain live-unverified. AppX needs an approved host.
 """
@@ -86,7 +87,7 @@ COMMANDS = [
     ('mychannels', 'Your public admin channels'), ('unlinktelegram', 'Revoke your extra Telegram link'),
     ('users', 'Owner-only user registry'), ('ban', 'Owner-only block a user from this bot'),
     ('unban', 'Owner-only unblock a user'), ('maintenance', 'Owner-only pause or resume bot access'),
-    ('admin', 'Owner-only read-only admin panel'), ('stats', 'Owner-only operations statistics')]
+    ('admin', 'Owner-only operations and access controls'), ('stats', 'Owner-only operations statistics')]
 
 
 def published_commands(config):

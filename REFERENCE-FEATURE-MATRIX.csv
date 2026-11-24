@@ -1,0 +1,21 @@
+feature,reference_area,new_project_status,scope_and_evidence
+AppX folder courses,appex_v1..v4.py,"Implemented, mock-tested",Own token and account ID; clear metadata URLs only; live unverified
+AppX flat subject/topic courses,appex_v1..v4.py,"Implemented, mock-tested","Bounded traversal; reference-informed schema, live unverified"
+Classplus courses and folders,classplus.py,"Implemented, mock-tested",Own token; explicit entitlement marker required; live unverified
+Separate provider sessions,"appex*.py,classplus.py","Implemented, mock-tested",Per Telegram user and provider; no shared auth headers
+Destination-channel export delivery,export send-document flows,"Implemented, mock-tested",User-chosen channel; permission checks; no DM fallback
+General Telegram media/message relay,not certified as reference feature,Not implemented,No source-chat forwarding engine in this extractor
+TXT output and progress/cancel,provider modules,"Implemented, mock-tested",Bounded clear-link TXT; no media download
+Public user access / owner stats,"start.py,stats.py",Implemented subset,Ordinary users allowed; owner metadata counts only
+Password login / OTP,"getappxotp.py,provider login flows",Not implemented,Own-token connection instead; no passwords collected
+Additional provider adapters,"adda.py,ak.py,careerwill.py,exampur.py,iq.py,kdlive.py,khan.py,mix.py,mypathshala.py,pw.py,rg_vikramjeet.py,utk.py,vision.py",Not implemented,AppX and Classplus phase only
+Free/no-login provider variants,"freeappx.py,freecp.py,freepw.py",Not reproduced,No embedded/shared tokens or protected-access bypass
+API discovery/catalog,findapi.py,Not implemented,Exact allowed AppX hosts configured explicitly
+TXT/HTML converters,enc.py and converter helpers,Not implemented,Fixed client-side key secrecy claims not reproduced
+Premium plans / payment permissions,plans.py,Not implemented,No paid service or payment setup
+Bulk broadcasts,broadcast.py,Not implemented,No unsolicited broadcast infrastructure
+Durable database / resume,reference persistence helpers,Not implemented,All runtime account/job/channel state is RAM-only
+Bulk credential checker,check.py,Not reproduced,No account credential testing workflow
+Remote eval/shell,eval.py,Not reproduced,No arbitrary-code operator interface
+Encrypted or DRM media extraction,provider decrypt/key code,Not reproduced,Unsupported/protected fields skipped; no decryption/signing endpoint
+Deployment and real provider verification,whole reference project,Pending,"No new repository, hosting, webhook or live test yet"

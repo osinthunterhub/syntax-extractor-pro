@@ -1,6 +1,6 @@
 # Independent Extractor — v0.2.1-dev
 
-**Separate new project. AppX + Classplus adapters. 86 local/mock tests. Not deployed,
+**Separate new project. AppX + Classplus adapters. 86 local/mock tests. Web service deployed; Telegram activation blocked,
 not a claim of A–Z parity, real provider compatibility or fastest performance.**
 
 The existing `@TurboForwarderPro_Bot`, its credentials, sessions, settings and hosting
@@ -112,11 +112,12 @@ python -m pytest -q
 ```
 
 86 tests pass under local Python 3.13. Production module Pyflakes check is clean.
-GitHub CI passed for Python 3.12 + 3.13 (run 45343096784). Python 3.12 hosted deployment runtime,
-Render build and live APIs remain unverified. `TEST-RESULTS.txt` records actual local
+GitHub CI passed for Python 3.12 + 3.13 (86-test revision, run 45344759182).
+Render Python 3.12.12 build and HTTP liveness/auth/readiness were verified.
+Telegram identity and provider APIs remain unverified. `TEST-RESULTS.txt` records actual local
 results. All provider requests are mocked; local webhook HTTP tests run only locally.
 
-## Zero-cost deployment template — Render access pending
+## Zero-cost deployment configuration — Free service created
 
 - New repository only. Upload extracted contents at repository root; never `.env`.
 - New Telegram bot only. Put secrets in the NEW Render service environment, not chat,
@@ -165,3 +166,13 @@ It reports ready/identity_verified/webhook_configured separately; /readyz is503
 until bootstrap succeeds. Unready webhook returns503 without acknowledging updates.
 At most three startup getMe attempts, then stop until next process startup: no
 crash-loop retry. A live Render web service does not mean an active Telegram bot.
+
+## Observed deployment result
+Code commit3760b1a345d7dd9eddf999d5e7994062b4b362bb deployed successfully to
+https://syntax-extract-pro.onrender.com on Render Free (Singapore).
+Health200 is process-only. Bot startup stopped after bounded Telegram429 retries:
+ready=false, identity_verified=false, webhook_configured=false. /readyz503,
+unauthenticated webhook401, authenticated-unready webhook503 verified remotely.
+No further in-process retry loop. After external cooldown, one controlled restart
+will retry identity/bootstrap; no guarantee that Telegram accepts it.
+See DEPLOYMENT-STATUS.md for actual service/deploy/CI IDs.

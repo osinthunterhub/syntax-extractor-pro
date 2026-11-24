@@ -1,4 +1,7 @@
-Syntax Extractor Pro readiness patch
-Local Python3.13.18: 86 passed in0.34s; app pyflakes clean.
-82-test revision eb5d6d9 passed CI3.12+3.13 (run45344075591).
-Readiness patch CI pending. No live provider or channel tests.
+Syntax Extractor Pro v0.2.1-dev readiness patch
+Local Python3.13.18:86 passed in0.34s; app pyflakes clean.
+GitHub CI45344759182: Python3.12 and3.13 SUCCESS on3760b1a.
+Render3.12.12 build PASS; deployment LIVE (web process only).
+Remote /healthz200, /readyz503, webhook401 without secret,503 while unready.
+Telegram getMe429 persists; identity/webhook NOT verified.
+No real provider extraction/channel-delivery test.

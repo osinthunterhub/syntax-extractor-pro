@@ -22,6 +22,7 @@ class Config:
     mtproto_session: str = field(default='', repr=False)
     owner_ready_notice: bool = False
     startup_paused: bool = False
+    classplus_otp_enabled: bool = False
 
     @classmethod
     def from_env(cls, env=None):
@@ -73,4 +74,5 @@ class Config:
                 raise ConfigError('Explicit authorized bot-only MTProto credentials/session required.')
         return cls(token, secret, url, username, hosts, port, e.get('SET_WEBHOOK', 'false').lower() == 'true', owner,
                    transport, api_id, api_hash, bot_session, e.get('OWNER_READY_NOTICE', 'false').lower() == 'true',
-                   e.get('TELEGRAM_START_PAUSED', 'false').lower() == 'true')
+                   e.get('TELEGRAM_START_PAUSED', 'false').lower() == 'true',
+                   e.get('CLASSPLUS_OTP_ENABLED', 'false').lower() == 'true')

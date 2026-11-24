@@ -223,7 +223,7 @@ def test_owner_stats_fail_closed():
         t=ChannelTG();cfg=replace(Config.from_env(env()),owner_id=77)
         b=Bot(cfg,t,FakeAppX(),999)
         await b.handle(update('/stats',uid=1));assert t.sent[-1][1]=='OWNER_ONLY'
-        await b.handle(update('/stats',uid=77));assert 'RAM connections:' in t.sent[-1][1]
+        await b.handle(update('/stats',uid=77));assert 'Connected account sessions:' in t.sent[-1][1]
     run(case())
 
 

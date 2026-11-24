@@ -187,7 +187,8 @@ class MTProtoTelegram(Telegram):
     async def enqueue(self, bot, update, key):
         if update is None or key in bot.state.seen:
             return False
-        if bot.updates.full():
+        queue = bot.queue_for(update) if hasattr(bot, 'queue_for') else bot.updates
+        if queue.full():
             self.runtime['overload_drops'] = self.runtime.get('overload_drops', 0) + 1
             now = time.monotonic()
             if now - self._last_busy > 10:
@@ -199,13 +200,13 @@ class MTProtoTelegram(Telegram):
                     pass
             return False
         bot.state.mark_seen(key)
-        bot.updates.put_nowait(update)
+        queue.put_nowait(update)
         self.runtime['received_updates'] = self.runtime.get('received_updates', 0) + 1
         return True
 
     def start_receiving(self, bot):
         async def message(event):
-            await self.enqueue(bot, incoming_message(event, event.sender_id in getattr(getattr(bot, 'conversations', None), 'steps', {})), ('mtp-msg', event.chat_id, event.id))
+            await self.enqueue(bot, incoming_message(event, (event.sender_id in getattr(getattr(bot, 'conversations', None), 'steps', {}) or event.sender_id in getattr(getattr(bot, 'classplus_login', None), 'pending', {}))), ('mtp-msg', event.chat_id, event.id))
         async def callback(event):
             await self.enqueue(bot, incoming_callback(event), ('mtp-cb', event.id))
         for handler, builder in [(message, events.NewMessage(incoming=True)), (callback, events.CallbackQuery())]:

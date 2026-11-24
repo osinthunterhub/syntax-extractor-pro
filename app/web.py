@@ -3,6 +3,7 @@ import hmac
 import logging
 import re
 import time
+from contextlib import asynccontextmanager
 from aiohttp import web
 import aiohttp
 from .config import Config
@@ -13,45 +14,74 @@ from .jobs import Jobs
 from .telegram import Telegram, verified_identity
 from .ui import callback_command, render_panel, provider_panel, Panel, button
 from .conversation import Conversations
+from .classplus_auth import ClassplusLogin
+from .ui import classplus_login_panel, dashboard_panel, owner_panel, login_error
 
-HELP = '''Syntax Extractor Pro — v0.3.3-dev. Telegram active; provider live tests pending.
-/connect — guided private account setup (own existing token; no password/OTP)
-AppX and Classplus have separate account connections.
-/start or /xtract — home
-/login — account panel
-/free — public-content availability (no source connected yet)
+HELP = """⚡ SYNTAX EXTRACTOR PRO
+━━━━━━━━━━━━━━━━━━━━
+
+👤 HOME & ACCOUNT
+/start — home
+/dashboard — your accounts, channel and jobs
+/login — provider access panel
+/cp or /cplogin — Classplus login options
+/cptoken — connect your own existing token
+/cpotp — Classplus org code + own mobile + OTP
+/connect — guided existing-token setup
+
+📚 COURSES & EXPORT
+/courses — account courses (20-second display cache)
+/refreshcourses — reload courses from provider
+/setdestination @YourChannel — verify user + bot admin rights
+/destination — your selected channel
+/export COURSE_ID — queue clear-link TXT to that channel only
+
+⚙️ CONTROL & PRIVACY
+/status — your job
+/cancel — cancel your job/login setup
+/disconnect — forget selected provider account
+/logoutall — forget both your provider accounts
+/cleardestination — forget channel and cancel job
+/health — bot and provider availability
+
+🧭 HELP
 /tools | /guide | /privacy | /capabilities | /support
-/appx — select AppX
-/classplus or /cp — select Classplus
-/connect appx API_HOST ACTUAL_USER_ID TOKEN
-/connect classplus YOUR_OWN_TOKEN
-/courses — selected provider's account courses
-/setdestination @YourChannel — you and bot must be channel admins
-/destination — current export destination
-/cleardestination — forget destination and cancel your job
-/export COURSE_ID — send supported clear-link TXT ONLY to selected channel
-/status | /cancel
-/disconnect — selected provider logout + job cancellation
-/logoutall — forget both provider connections + cancel
-/help
-No passwords, fixed accounts, DRM decryption or protected-access bypass.
-Sessions, destinations, jobs and dedup are RAM-only; restart loses them.
-Connection map TTL: one hour. Job snapshots retained until stopped.
-Connection messages deleted best-effort. Keep signed-link files private.'''
+/free — public-source availability (none connected yet)
+/help — this arranged guide
+
+🛠 OWNER
+/admin or /stats — owner-only read-only operations panel
+
+Classplus OTP requires explicit SMS confirmation; never send a Telegram code.
+No passwords, shared accounts, automatic registration or DRM bypass.
+RAM-only settings reset on restart. Secret-message deletion is best-effort.
+Real provider-account exports remain live-unverified. AppX needs an approved host.
+"""
 
 COMMANDS = [
-    ('start', 'Open extractor home'), ('login', 'Open account access panel'),
-    ('free', 'Public content availability'), ('tools', 'Open tools and controls'),
-    ('appx', 'Select AppX account'),
-    ('classplus', 'Select Classplus account'), ('connect', 'Connect your own authorized token'),
-    ('courses', 'List selected account courses'), ('setdestination', 'Set your export channel'),
-    ('destination', 'Show your selected channel'), ('export', 'Queue authorized course TXT export'),
-    ('status', 'Check your current job'), ('cancel', 'Cancel your current job'),
-    ('disconnect', 'Forget selected account'), ('logoutall', 'Forget all connected accounts'),
-    ('cleardestination', 'Forget channel and cancel job'),
-    ('guide', 'Step-by-step export guide'), ('privacy', 'Read privacy and session limits'),
-    ('capabilities', 'See honest support coverage'), ('support', 'Contact support safely'),
-    ('help', 'Show commands and limitations')]
+    ('start', 'Home'), ('dashboard', 'Your accounts, channel and jobs'),
+    ('login', 'Provider account access'), ('cplogin', 'Classplus login options'),
+    ('cptoken', 'Classplus: use your own token'), ('cpotp', 'Classplus: org code + mobile + OTP'),
+    ('classplus', 'Open Classplus'), ('connect', 'Guided own-token setup'),
+    ('courses', 'Your account courses'), ('refreshcourses', 'Refresh account courses from provider'),
+    ('setdestination', 'Verify your export channel'), ('destination', 'Your selected channel'),
+    ('export', 'Export course TXT to selected channel'),
+    ('status', 'Your current job'), ('cancel', 'Cancel your job or login setup'),
+    ('disconnect', 'Forget selected provider account'), ('logoutall', 'Forget all your accounts'),
+    ('cleardestination', 'Forget channel and cancel job'), ('health', 'Bot and provider availability'),
+    ('tools', 'Account and job controls'), ('guide', 'Step-by-step guide'),
+    ('privacy', 'Privacy and session limits'), ('capabilities', 'Honest feature availability'),
+    ('support', 'Safe support contact'), ('free', 'Public-source availability'),
+    ('appx', 'AppX setup/status'), ('help', 'Arranged command guide'),
+    ('admin', 'Owner-only read-only admin panel'), ('stats', 'Owner-only operations statistics')]
+
+
+def published_commands(config):
+    return [(name, description) for name, description in COMMANDS
+            if name not in ('admin', 'stats')
+            and (name != 'appx' or config.appx_hosts)
+            and (name != 'cpotp' or config.classplus_otp_enabled)]
+
 
 class Bot:
     def __init__(self, config, tg, provider, bot_id=0):
@@ -60,8 +90,11 @@ class Bot:
         self.state = State()
         self.selected = {}
         self.conversations = Conversations()
+        self.classplus_login = ClassplusLogin(getattr(self.router.providers.get('classplus'), 'session', None))
+        self.course_cache, self.revisions, self.lock_refs = {}, {}, {}
         self.destinations = Destinations(tg, bot_id)
         self.updates = asyncio.Queue(maxsize=32)
+        self.fast_updates = asyncio.Queue(maxsize=16)
         self.locks, self.last, self.workers = {}, {}, []
         self.jobs = Jobs(self.router, self.deliver, self.notify)
 
@@ -82,6 +115,12 @@ class Bot:
         else:
             await self.tg.send(chat, text)
 
+    async def delete_input(self, chat, message_id):
+        try:
+            await asyncio.wait_for(self.tg.delete(chat, message_id), 2)
+        except (ProviderError, asyncio.TimeoutError):
+            pass  # best-effort deletion must not hold every login behind a 35s RPC
+
     async def show_panel(self, chat, panel, message_id=None):
         if hasattr(self.tg, 'panel'):
             await self.tg.panel(chat, panel.text, panel.rows, message_id)
@@ -98,24 +137,124 @@ class Bot:
             nav.append(button('Next ➡️', f'coursepage:{nonce}:{page + 1}'))
         if nav:
             rows.append(tuple(nav))
-        await self.show_panel(cid, Panel(f'{provider}: course choices • {page + 1}/{pages}\nChoose a course, or /export COURSE_ID. Choices expire in5 minutes; entitlement and channel rights are rechecked before delivery.', tuple(rows)), message_id)
+        body = '\n\n'.join(f'{page * 8 + i + 1}. {c.name}\nID: {c.id}' for i, c in enumerate(courses))
+        await self.show_panel(cid, Panel(f'📚 {provider.upper()} • COURSES {page + 1}/{pages}\n━━━━━━━━━━━━━━━━━━━━\n\n{body}\n\nTap a course to export, or /export COURSE_ID.\nChoices expire in 5 minutes. Account membership and channel rights are rechecked.', tuple(rows)), message_id)
 
     async def present_courses(self, uid, cid, selected, courses):
         if not courses:
+            self.conversations.choices.pop(uid, None)
             await self.tg.send(cid, 'No courses returned by your account.')
             return
         nonce = self.conversations.course_page(uid, selected, courses)
-        buf = f'{selected}: your account courses\n'
-        for course in courses:
-            row = f'{course.id} — {course.name}' + ('' if course.folder_mode else ' [flat course; schema-dependent]') + '\n'
-            if len(buf) + len(row) > 3200:
-                await self.tg.send(cid, buf)
-                buf = ''
-                await asyncio.sleep(1)
-            buf += row
-        if buf:
-            await self.tg.send(cid, buf)
         await self.show_course_page(uid, cid, selected, nonce, 0)
+
+    def queue_for(self, update):
+        item = update.get('message') or {}
+        text = item.get('text', '')
+        callback = update.get('callback_query')
+        if isinstance(callback, dict):
+            text = callback_command(callback.get('data')) or ''
+        cmd = text.split()[0].split('@')[0].lower() if isinstance(text, str) and text.split() else ''
+        return self.fast_updates if cmd in {'/cancel', '/disconnect', '/logoutall', '/dashboard', '/admin', '/stats', '/health', '/status'} else self.updates
+
+    @asynccontextmanager
+    async def user_lock(self, uid):
+        if uid not in self.locks and len(self.locks) >= 250:
+            raise ProviderError('USER_CAPACITY_REACHED_TRY_LATER')
+        lock = self.locks.setdefault(uid, asyncio.Lock())
+        self.lock_refs[uid] = self.lock_refs.get(uid, 0) + 1
+        try:
+            async with lock:
+                yield
+        finally:
+            self.lock_refs[uid] -= 1
+            if not self.lock_refs[uid]:
+                self.lock_refs.pop(uid, None)
+                self.locks.pop(uid, None)
+
+    def clear_login(self, uid):
+        self.revisions[uid] = self.revisions.get(uid, 0) + 1
+        self.classplus_login.cancel(uid)
+        self.conversations.clear(uid)
+        for key in list(self.course_cache):
+            if key[0] == uid:
+                self.course_cache.pop(key, None)
+
+    async def finish_login(self, uid, cid, connection, otp_verified=False):
+        revision = self.revisions.get(uid, 0)
+        await self.tg.send(cid, '⏳ Checking your provider account…\n\nNo automatic retry. /cancel stops this login. Provider response time can vary.')
+        if revision != self.revisions.get(uid, 0):
+            raise ProviderError('LOGIN_CANCELLED_NO_SESSION_SAVED')
+        try:
+            courses = await asyncio.wait_for(self.router.adapter(connection.provider).courses(connection), 35)
+        except (asyncio.TimeoutError, ProviderError) as exc:
+            if revision != self.revisions.get(uid, 0):
+                raise ProviderError('LOGIN_CANCELLED_NO_SESSION_SAVED') from None
+            if otp_verified:
+                self.state.put(uid, connection)
+                self.selected[uid] = connection.provider
+                code = str(exc) if isinstance(exc, ProviderError) else 'PROVIDER_TIMEOUT_TRY_LATER_NO_AUTORETRY'
+                await self.tg.send(cid, '✅ Classplus OTP verified; your account connection is saved in RAM.\n\nCourse listing could not complete. Try /refreshcourses without requesting another OTP.\n\n' + code)
+                return
+            if isinstance(exc, ProviderError):
+                raise
+            raise ProviderError('LOGIN_TIMEOUT_TRY_LATER_NO_AUTORETRY') from None
+        if revision != self.revisions.get(uid, 0):
+            raise ProviderError('LOGIN_CANCELLED_NO_SESSION_SAVED')
+        self.state.put(uid, connection)
+        self.selected[uid] = connection.provider
+        self.course_cache[(uid, connection.provider)] = (time.monotonic() + 20, connection, courses)
+        await self.tg.send(cid, f'✅ {connection.provider.upper()} CONNECTED\n\n{len(courses)} account courses returned.\nToken/OTP not logged. Sessions are private and RAM-only.')
+        if connection.provider == 'classplus':
+            await self.present_courses(uid, cid, connection.provider, courses)
+
+    async def auth_result(self, uid, cid, result):
+        if result.token:
+            if uid in self.jobs.active:
+                raise ProviderError('CANCEL_EXISTING_JOB_BEFORE_RECONNECT')
+            await self.finish_login(uid, cid, Connection('api.classplusapp.com', 'self', result.token, 'classplus'), otp_verified=True)
+        elif result.confirm:
+            await self.show_panel(cid, Panel(result.prompt, ((button('📨 Send OTP to MY number', 'auth:sendotp'),), (button('✖️ Cancel', 'action:cancel'),))))
+        else:
+            await self.tg.send(cid, result.prompt)
+
+    async def local_control(self, uid, cid, cmd, message_id=None):
+        selected = self.selected.get(uid, 'classplus' if self.config.classplus_otp_enabled else 'appx')
+        if cmd in ('/cancel', '/disconnect', '/logoutall'):
+            had_setup = uid in self.classplus_login.pending or uid in self.conversations.steps
+            self.clear_login(uid)
+            cancelled = self.jobs.cancel(uid)
+            if cmd != '/cancel':
+                self.state.drop(uid, None if cmd == '/logoutall' else selected)
+                text = 'Connection forgotten; cancellation requested. In-flight requests stop at deadline.'
+            else:
+                text = 'Cancellation requested.' if cancelled or had_setup else 'No active job.'
+            await self.tg.send(cid, text)
+        elif cmd == '/status':
+            job = self.jobs.active.get(uid)
+            await self.tg.send(cid, f'Job {job.id} ({job.connection.provider}): queued/running; cancel={job.cancelled.is_set()}' if job else 'No active job.')
+        elif cmd == '/dashboard':
+            accounts = '\n'.join(f'• {p}: ' + ('connected' if self.state.get(uid, p) else 'not connected') for p in ('classplus', 'appx'))
+            dest = self.destinations.values.get(uid)
+            job = self.jobs.active.get(uid)
+            setup = self.classplus_login.pending.get(uid) or self.conversations.steps.get(uid)
+            await self.show_panel(cid, dashboard_panel(selected, accounts, f'{dest.title} ({dest.chat_id})' if dest else 'Not set — /setdestination @YourChannel', f'{job.connection.provider}: queued/running' if job else 'No active job', setup.stage if setup else 'Not active', bool(self.config.owner_id and uid == self.config.owner_id)), message_id)
+        elif cmd in ('/admin', '/stats'):
+            if not self.config.owner_id or uid != self.config.owner_id:
+                raise ProviderError('OWNER_ONLY')
+            self.state.purge()
+            summary = (f'Connected account sessions: {len(self.state.connections)}\n\n'
+                f'Active/queued exports: {len(self.jobs.active)}\nWaiting: {self.jobs.queue.qsize()}\n\n'
+                f'Classplus OTP setups: {len(self.classplus_login.pending)}\n'
+                f'Provider accounts live-certified: no\nDurable jobs: no\n\n'
+                f'Update queues: {self.updates.qsize()} regular / {self.fast_updates.qsize()} control')
+            await self.show_panel(cid, owner_panel(summary), message_id)
+        elif cmd == '/health':
+            connected = bool(getattr(self.tg, 'connected', True))
+            await self.tg.send(cid, '🩺 BOT HEALTH\n\nVersion: 0.4.0-dev\nTelegram socket: ' + ('connected' if connected else 'disconnected') + '\n\nClassplus token: enabled\nClassplus OTP: ' + ('enabled; real account verification pending' if self.config.classplus_otp_enabled else 'disabled') + '\nAppX: ' + ('configured; live-unverified' if self.config.appx_hosts else 'disabled; host pending') + '\n\nFree hosting can sleep. Provider/SMS latency is external. Settings are RAM-only.')
+        else:
+            return False
+        return True
 
     async def handle(self, update):
         callback = update.get('callback_query')
@@ -123,8 +262,8 @@ class Bot:
             qid = callback.get('id')
             if isinstance(qid, str) and len(qid) <= 256:
                 try:
-                    await self.tg.call('answerCallbackQuery', {'callback_query_id': qid})
-                except ProviderError:
+                    await asyncio.wait_for(self.tg.call('answerCallbackQuery', {'callback_query_id': qid}), 2)
+                except (ProviderError, asyncio.TimeoutError):
                     pass  # expired/rate-limited acknowledgement must not drop a local cancel action
             command = callback_command(callback.get('data'))
             original = callback.get('message')
@@ -143,44 +282,57 @@ class Bot:
         if not isinstance(uid, int) or isinstance(uid, bool) or not isinstance(cid, int) or sender.get('is_bot'):
             return
         text = message.get('text', '')
+        already_deleted = False
         if not isinstance(text, str) or not text.strip():
             return
         if not text.startswith('/'):
-            if chat.get('type') != 'private' or uid != cid or uid not in self.conversations.steps:
+            if chat.get('type') != 'private' or uid != cid or not (uid in self.conversations.steps or uid in self.classplus_login.pending):
                 return
-            await self.tg.delete(cid, message.get('message_id'))
-            try:
-                text, prompt = self.conversations.accept(uid, text, self.config.appx_hosts)
-                if prompt:
-                    await self.tg.send(cid, prompt)
+            await self.delete_input(cid, message.get('message_id'))
+            already_deleted = True
+            if uid in self.classplus_login.pending:
+                text = '/authinput ' + text
+            else:
+                try:
+                    text, prompt = self.conversations.accept(uid, text, self.config.appx_hosts)
+                    if prompt:
+                        await self.tg.send(cid, prompt)
+                        return
+                except ProviderError as exc:
+                    await self.tg.send(cid, login_error(str(exc)))
                     return
-            except ProviderError as exc:
-                await self.tg.send(cid, str(exc))
-                return
         parts = text.split()
         cmd = parts[0].split('@')[0].lower()
         panel_message_id = message.get('message_id') if isinstance(callback, dict) else None
         if chat.get('type') != 'private' or uid != cid:
-            if cmd == '/connect':
-                await self.tg.delete(cid, message.get('message_id'))
+            if cmd in ('/connect', '/authinput') and not already_deleted and not isinstance(callback, dict):
+                await self.delete_input(cid, message.get('message_id'))
             await self.tg.send(cid, 'For account security, use this bot in private chat only.')
             return
-        if cmd == '/connect':
-            await self.tg.delete(cid, message.get('message_id'))
-        if uid not in self.locks and len(self.locks) >= 250:
-            await self.tg.send(cid, 'USER_CAPACITY_REACHED_TRY_AFTER_RESTART')
+        if cmd in ('/connect', '/authinput') and not already_deleted and not isinstance(callback, dict):
+            await self.delete_input(cid, message.get('message_id'))
+        try:
+            if await self.local_control(uid, cid, cmd, panel_message_id):
+                return
+        except ProviderError as exc:
+            await self.tg.send(cid, login_error(str(exc)))
             return
-        lock = self.locks.setdefault(uid, asyncio.Lock())
-        async with lock:
+        if uid not in self.locks and len(self.locks) >= 250:
+            await self.tg.send(cid, 'USER_CAPACITY_REACHED_TRY_LATER')
+            return
+        async with self.user_lock(uid):
             now = time.monotonic()
-            cheap = {'/start', '/home', '/xtract', '/help', '/appx', '/classplus', '/cp', '/cancel', '/disconnect', '/logoutall', '/status', '/destination', '/cleardestination', '/panel', '/login', '/free', '/tools', '/support', '/guide', '/privacy', '/capabilities', '/coursepage'}
+            cheap = {'/start', '/home', '/xtract', '/help', '/appx', '/classplus', '/cp', '/cancel', '/disconnect', '/logoutall', '/status', '/destination', '/cleardestination', '/panel', '/login', '/free', '/tools', '/support', '/guide', '/privacy', '/capabilities', '/coursepage', '/cplogin', '/cptoken', '/cpotp', '/sendotp', '/authinput'}
+            selected = self.selected.get(uid, 'classplus' if self.config.classplus_otp_enabled else 'appx')
+            cached = self.course_cache.get((uid, selected))
+            is_cached_courses = cmd == '/courses' and cached and cached[0] > now and cached[1] is self.state.get(uid, selected)
             is_setup_prompt = cmd == '/connect' and (len(parts) == 1 or len(parts) == 2 and parts[1].lower() in ('appx', 'classplus'))
-            if cmd not in cheap and not is_setup_prompt and now - self.last.get(uid, 0) < 2:
+            if cmd not in cheap and not is_setup_prompt and not is_cached_courses and now - self.last.get(uid, 0) < 2:
                 await self.tg.send(cid, 'Please wait two seconds between API commands.')
                 return
-            if cmd not in cheap and not is_setup_prompt:
+            if cmd not in cheap and not is_setup_prompt and not is_cached_courses:
                 self.last[uid] = now
-            selected = self.selected.get(uid, 'appx')
+            selected = self.selected.get(uid, 'classplus' if self.config.classplus_otp_enabled else 'appx')
             if cmd == '/choose':
                 try:
                     if len(parts) != 3 or not parts[2].isdigit():
@@ -188,7 +340,7 @@ class Bot:
                     parts = ['/export', self.conversations.choose(uid, selected, parts[1], int(parts[2]))]
                     cmd = '/export'
                 except ProviderError as exc:
-                    await self.tg.send(cid, str(exc))
+                    await self.tg.send(cid, login_error(str(exc)))
                     return
             try:
                 if cmd in ('/start', '/home', '/xtract', '/login', '/free', '/tools', '/support', '/guide', '/privacy', '/capabilities', '/panel'):
@@ -198,7 +350,35 @@ class Bot:
                         panel = render_panel(parts[1:] if cmd == '/panel' else [aliases[cmd]])
                     except ValueError:
                         raise ProviderError('INVALID_MENU_SELECTION_USE_START') from None
+                    if cmd == '/login' and not self.config.appx_hosts:
+                        rows = tuple(tuple(b for b in row if b.get('callback_data') != 'provider:appx') for row in panel.rows)
+                        panel = Panel(panel.text, tuple(row for row in rows if row))
+                    if cmd in ('/start', '/home', '/xtract') and self.config.owner_id and uid == self.config.owner_id:
+                        panel = Panel(panel.text, panel.rows + ((button('🛠 Owner admin', 'nav:admin'),),))
                     await self.show_panel(cid, panel, panel_message_id)
+                elif cmd in ('/cplogin', '/cptoken', '/cpotp', '/sendotp', '/authinput'):
+                    if uid in self.jobs.active:
+                        raise ProviderError('CANCEL_EXISTING_JOB_BEFORE_RECONNECT')
+                    self.selected[uid] = 'classplus'
+                    if cmd == '/cplogin':
+                        self.clear_login(uid)
+                        if self.config.classplus_otp_enabled:
+                            await self.show_panel(cid, classplus_login_panel(), panel_message_id)
+                        else:
+                            await self.tg.send(cid, self.conversations.begin(uid, 'classplus', self.config.appx_hosts))
+                    elif cmd == '/cptoken':
+                        self.clear_login(uid)
+                        await self.tg.send(cid, self.conversations.begin(uid, 'classplus', self.config.appx_hosts))
+                    else:
+                        if not self.config.classplus_otp_enabled:
+                            raise ProviderError('CLASSPLUS_OTP_DISABLED_USE_CPTOKEN')
+                        if cmd == '/cpotp':
+                            self.clear_login(uid)
+                            await self.auth_result(uid, cid, self.classplus_login.begin(uid))
+                        elif cmd == '/sendotp':
+                            await self.auth_result(uid, cid, await self.classplus_login.send(uid))
+                        else:
+                            await self.auth_result(uid, cid, await self.classplus_login.input(uid, text.partition(' ')[2]))
                 elif cmd == '/coursepage':
                     if len(parts) != 3 or not re.fullmatch(r'[a-f0-9]{8}', parts[1]) or not re.fullmatch(r'\d{1,2}', parts[2]):
                         raise ProviderError('INVALID_COURSE_PAGE')
@@ -207,15 +387,19 @@ class Bot:
                     await self.menu(cid, HELP)
                 elif cmd in ('/appx', '/classplus', '/cp'):
                     selected = 'appx' if cmd == '/appx' else 'classplus'
-                    self.conversations.clear(uid)
+                    self.clear_login(uid)
                     self.selected[uid] = selected
                     connected = self.state.get(uid, selected) is not None
                     panel = provider_panel(selected, bool(self.config.appx_hosts), connected)
-                    await self.show_panel(cid, panel, panel_message_id)
-                    if selected == 'classplus' and not connected and uid not in self.jobs.active:
-                        prompt = self.conversations.begin(uid, selected, self.config.appx_hosts)
-                        await self.tg.send(cid, prompt)
+                    if selected == 'classplus' and not connected and uid not in self.jobs.active and self.config.classplus_otp_enabled:
+                        await self.show_panel(cid, classplus_login_panel(), panel_message_id)
+                    else:
+                        await self.show_panel(cid, panel, panel_message_id)
+                        if selected == 'classplus' and not connected and uid not in self.jobs.active:
+                            prompt = self.conversations.begin(uid, selected, self.config.appx_hosts)
+                            await self.tg.send(cid, prompt)
                 elif cmd == '/connect':
+                    self.classplus_login.cancel(uid)
                     args = parts[1:]
                     if not args or len(args) == 1 and args[0].lower() in ('appx', 'classplus'):
                         if args:
@@ -226,7 +410,7 @@ class Bot:
                         prompt = self.conversations.begin(uid, selected, self.config.appx_hosts)
                         await self.tg.send(cid, prompt)
                         return
-                    self.conversations.clear(uid)
+                    self.clear_login(uid)
                     if args and args[0].lower() in ('appx', 'classplus'):
                         selected, args = args[0].lower(), args[1:]
                     if selected == 'appx' and len(args) == 3:
@@ -246,23 +430,7 @@ class Bot:
                         raise ProviderError('CANCEL_EXISTING_JOB_BEFORE_RECONNECT')
                     self.state.drop(uid, selected)
                     connection = Connection(host, account, token, selected)
-                    courses = await self.router.adapter(selected).courses(connection)
-                    self.state.put(uid, connection)
-                    self.selected[uid] = selected
-                    await self.tg.send(cid, f'{selected}: connected. {len(courses)} account courses returned. Token not logged. /courses')
-                    if selected == 'classplus':
-                        await self.present_courses(uid, cid, selected, courses)
-                elif cmd in ('/disconnect', '/logoutall'):
-                    self.conversations.clear(uid)
-                    self.jobs.cancel(uid)
-                    self.state.drop(uid, None if cmd == '/logoutall' else selected)
-                    await self.tg.send(cid, 'Connection forgotten; cancellation requested. In-flight requests stop at deadline.')
-                elif cmd == '/cancel':
-                    self.conversations.clear(uid)
-                    await self.tg.send(cid, 'Cancellation requested.' if self.jobs.cancel(uid) else 'No active job.')
-                elif cmd == '/status':
-                    job = self.jobs.active.get(uid)
-                    await self.tg.send(cid, f'Job {job.id} ({job.connection.provider}): queued/running; cancel={job.cancelled.is_set()}' if job else 'No active job.')
+                    await self.finish_login(uid, cid, connection)
                 elif cmd == '/setdestination':
                     if len(parts) != 2:
                         raise ProviderError('USE_SETDESTINATION_CHANNEL_USERNAME_OR_ID')
@@ -277,16 +445,17 @@ class Bot:
                     self.jobs.cancel(uid)
                     self.destinations.values.pop(uid, None)
                     await self.tg.send(cid, 'Destination forgotten; cancellation requested. No output fallback.')
-                elif cmd == '/stats':
-                    if not self.config.owner_id or uid != self.config.owner_id:
-                        raise ProviderError('OWNER_ONLY')
-                    await self.tg.send(cid, f'RAM connections: {len(self.state.connections)}\nActive/queued jobs: {len(self.jobs.active)}\nWaiting: {self.jobs.queue.qsize()}\nProvider adapters: {", ".join(sorted(self.router.providers))}\nLive verification: pending\nDurable jobs: no')
-                elif cmd in ('/courses', '/export'):
+                elif cmd in ('/courses', '/refreshcourses', '/export'):
                     connection = self.state.get(uid, selected)
                     if not connection:
                         raise ProviderError('CONNECT_SELECTED_PROVIDER_FIRST_SESSION_EXPIRED_OR_RESTARTED')
-                    if cmd == '/courses':
-                        courses = await self.router.adapter(selected).courses(connection)
+                    if cmd in ('/courses', '/refreshcourses'):
+                        cached = self.course_cache.get((uid, selected))
+                        if cmd == '/courses' and cached and cached[0] > time.monotonic() and cached[1] is connection:
+                            courses = cached[2]
+                        else:
+                            courses = await asyncio.wait_for(self.router.adapter(selected).courses(connection), 35)
+                            self.course_cache[(uid, selected)] = (time.monotonic() + 20, connection, courses)
                         await self.present_courses(uid, cid, selected, courses)
                     else:
                         if len(parts) != 2 or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', parts[1]):
@@ -299,13 +468,16 @@ class Bot:
                 else:
                     await self.tg.send(cid, 'Unknown command. /help')
             except ProviderError as exc:
-                await self.tg.send(cid, str(exc))
+                await self.tg.send(cid, login_error(str(exc)))
+            except asyncio.TimeoutError:
+                await self.tg.send(cid, 'PROVIDER_TIMEOUT_TRY_LATER_NO_AUTORETRY')
             except ValueError:
                 await self.tg.send(cid, 'SESSION_CAPACITY_REACHED')
 
-    async def consume(self):
+    async def consume(self, queue=None):
+        queue = self.updates if queue is None else queue
         while True:
-            update = await self.updates.get()
+            update = await queue.get()
             try:
                 await self.handle(update)
             except asyncio.CancelledError:
@@ -313,7 +485,7 @@ class Bot:
             except Exception:
                 logging.warning('UPDATE_FAILED')
             finally:
-                self.updates.task_done()
+                queue.task_done()
                 update = None  # do not retain last credential-bearing update while idle
 
     async def housekeeping(self):
@@ -321,10 +493,18 @@ class Bot:
             await asyncio.sleep(60)
             self.state.purge()
             self.conversations.purge()
+            self.classplus_login.purge()
+            now = time.monotonic()
+            self.course_cache = {k: v for k, v in self.course_cache.items() if v[0] > now}
+            active = {u for u, _ in self.state.connections} | set(self.jobs.active) | set(self.conversations.steps) | set(self.classplus_login.pending) | set(self.locks)
+            self.last = {u: t for u, t in self.last.items() if t > now - 600 or u in active}
+            self.selected = {u: v for u, v in self.selected.items() if u in active or u in self.last}
+            self.revisions = {u: v for u, v in self.revisions.items() if u in active or u in self.last}
 
     def start(self):
         self.jobs.start()
-        self.workers = [asyncio.create_task(self.consume()) for _ in range(2)]
+        self.workers = [asyncio.create_task(self.consume()) for _ in range(4)]
+        self.workers.append(asyncio.create_task(self.consume(self.fast_updates)))
         self.workers.append(asyncio.create_task(self.housekeeping()))
 
     async def close(self):
@@ -335,6 +515,12 @@ class Bot:
         while not self.updates.empty():
             self.updates.get_nowait()
             self.updates.task_done()
+        while not self.fast_updates.empty():
+            self.fast_updates.get_nowait()
+            self.fast_updates.task_done()
+        self.classplus_login.pending.clear()
+        self.classplus_login.rates.clear()
+        self.course_cache.clear()
         self.conversations.steps.clear()
         self.conversations.choices.clear()
         self.state.connections.clear()
@@ -350,7 +536,7 @@ def create_app(config, bot, runtime=None):
             current['startup'] = 'TELEGRAM_TRANSPORT_DISCONNECTED'
         return current
     async def health(request):
-        return web.json_response({'service': 'independent-extractor', 'version': '0.3.3-dev', 'status': 'process-alive', 'providers': {'appx': 'limited-test-mvp' if config.appx_hosts else 'disabled-no-approved-host', 'classplus': 'reference-compatible-live-account-unverified'}, 'persistent_jobs': False, **readiness()})
+        return web.json_response({'service': 'independent-extractor', 'version': '0.4.0-dev', 'status': 'process-alive', 'providers': {'appx': 'limited-test-mvp' if config.appx_hosts else 'disabled-no-approved-host', 'classplus': 'reference-compatible-live-account-unverified'}, 'persistent_jobs': False, 'features': {'classplus_token': True, 'classplus_otp': config.classplus_otp_enabled, 'user_dashboard': True, 'owner_panel': bool(config.owner_id), 'priority_controls': True, 'course_display_cache_seconds': 20}, **readiness()})
     async def ready(request):
         current = readiness()
         return web.json_response(current, status=200 if current['ready'] else 503)
@@ -368,10 +554,11 @@ def create_app(config, bot, runtime=None):
             raise web.HTTPBadRequest()
         if update['update_id'] in bot.state.seen:
             return web.json_response({'ok': True})
-        if bot.updates.full():
+        queue = bot.queue_for(update)
+        if queue.full():
             raise web.HTTPServiceUnavailable(headers={'Retry-After': '10'})
         bot.state.mark_seen(update['update_id'])
-        bot.updates.put_nowait(update)
+        queue.put_nowait(update)
         return web.json_response({'ok': True})
     async def quiesce(request):
         # Secret-authenticated, idempotent stop-first handoff. NEVER exports a session.
@@ -413,7 +600,7 @@ async def bootstrap_bot(config, tg, bot, runtime):
         runtime['identity_verified'] = True
         if config.transport == 'mtproto':
             confirmed = await tg.call('setMyCommands', {
-                'commands': [{'command': name, 'description': description} for name, description in COMMANDS]})
+                'commands': [{'command': name, 'description': description} for name, description in published_commands(config)]})
             if confirmed is not True:
                 raise ProviderError('TELEGRAM_COMMANDS_NOT_CONFIRMED')
             tg.start_receiving(bot)
@@ -429,7 +616,7 @@ async def bootstrap_bot(config, tg, bot, runtime):
                 raise ProviderError('TELEGRAM_WEBHOOK_NOT_CONFIRMED')
             runtime['webhook_configured'] = True
             confirmed = await tg.call('setMyCommands', {
-                'commands': [{'command': name, 'description': description} for name, description in COMMANDS]})
+                'commands': [{'command': name, 'description': description} for name, description in published_commands(config)]})
             if confirmed is not True:
                 raise ProviderError('TELEGRAM_COMMANDS_NOT_CONFIRMED')
         bot.start()

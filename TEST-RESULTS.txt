@@ -1,6 +1,7 @@
-v0.3.3-dev:235 synthetic regression tests PASS0.47s; app Pyflakes clean.
-CI45360158857: Python3.12/3.13 SUCCESS.
-Final deploydep-dc2l1hss728c73au0vp0: LIVE /readyz200, identity/handlers verified.
-Actual synthetic-invalid-token HTTP probe -> ACCESS_DENIED as expected.
-Reference-format own-account/course/channel stub end-to-end test PASS.
-Real valid-account/course export/channel document delivery NOT yet tested.
+v0.4.0-dev:319 synthetic regression tests PASS0.57s; app Pyflakes clean; diff whitespace clean.
+Complete fake OTP->course->selected-channel flow; all registered command handlers exercised.
+Control queue served dashboard/cancel while4regular provider calls deliberately stalled.
+1000sequential users no stale per-user-lock exhaustion; cache does not bypass export membership.
+Actual nonexistent-org GET returned expected rejection; NO real SMS sent.
+Valid-account SMS/OTP/provider export/actual channel document remain UNVERIFIED.
+CI and final deployment evidence recorded separately after execution.

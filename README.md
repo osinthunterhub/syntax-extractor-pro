@@ -1,3 +1,18 @@
+# Current release: v0.4.0 — Classplus token + own-account OTP
+
+User dashboard `/dashboard`; login options `/cplogin`; arranged guide `/help`.
+OTP is for an existing CLASSPLUS account, NEVER Telegram. Explicit confirmation
+before SMS; no automatic resend/registration. Own token option remains available.
+Owner `/admin` is read-only aggregate operations; other users see only their own
+account/channel/jobs. Public access does not grant global owner privileges.
+
+319 synthetic tests pass; real valid-account OTP/course export/channel delivery
+remain live-unverified. AppX still disabled/no approved host. FREE hosting can
+sleep; this is not an always-on or instant-provider/SMS guarantee. See
+LOGIN-DASHBOARD-v0.4.0-STATUS.md for scope, safety limits and verification evidence.
+
+--- Earlier release documentation (superseded where current report differs) ---
+
 # Independent Extractor — v0.3.1-dev
 
 **Separate new project. AppX + Classplus adapters. 159 local/mock tests. Telegram bot active through official bot-only MTProto,

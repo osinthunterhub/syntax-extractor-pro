@@ -1,9 +1,9 @@
 {
-  "version": "0.3.3-dev",
+  "version": "0.4.0-dev",
   "files": {
     ".env.example": {
-      "bytes": 870,
-      "sha256": "a611a065b71837f5c96d00bf680461af53bb05e6c477f558679fcfef34c36cb0"
+      "bytes": 976,
+      "sha256": "149d557f32fa02b9bdacf94e2b282c37fdcd8539ea03e65dab7828b5b3560bd6"
     },
     ".github/workflows/tests.yml": {
       "bytes": 448,
@@ -21,17 +21,25 @@
       "bytes": 4186,
       "sha256": "2e555fd65f79a154fcb3b6f0d4cc0ac08b323dc24a7af7dd43dca212ca0ee80f"
     },
+    "COMMAND-COVERAGE-v0.4.0.csv": {
+      "bytes": 2929,
+      "sha256": "e8dad400028ea73942db393b6a9c994da8b8e8e6ccfc730121576a30287fd9d0"
+    },
     "DEPLOYMENT-STATUS.md": {
       "bytes": 2656,
       "sha256": "b77865dfaa24e5fda1ee2924d15381e1d3bfbfe9e5f0903bfc6ea0c6513b5934"
+    },
+    "LOGIN-DASHBOARD-v0.4.0-STATUS.md": {
+      "bytes": 6743,
+      "sha256": "89ec5085bfc2a9957f598b89dddf66b28865f9d13999dcacf410e715b314b2c2"
     },
     "PROVIDER-UPGRADE-v0.3.2.md": {
       "bytes": 4473,
       "sha256": "9226671586a7c6a6f8ae93931e395681b25e1da49644c1f76a80879f063fa724"
     },
     "README.md": {
-      "bytes": 19077,
-      "sha256": "ad82f0796378e7c3be7db4539f33996409a63d0ac48209803fa26d0b8a68d749"
+      "bytes": 19938,
+      "sha256": "8932caebcc2870152ff6c423ae6cba0497d4f6076437422cea9875f4e8a7865d"
     },
     "REFERENCE-COMMAND-INVENTORY.csv": {
       "bytes": 2894,
@@ -50,8 +58,8 @@
       "sha256": "bac73f2eb9fdd5b9d9a546a2b0d7f536c8c580b612b33bc7c8feba73585ebc34"
     },
     "TEST-RESULTS.txt": {
-      "bytes": 414,
-      "sha256": "472e5146cdd15c3adbbaa923aa458566dc6c064e368f7f1627474ea05a679926"
+      "bytes": 600,
+      "sha256": "50a36fe9997d18381ca7b2b2b611360715e8c5c7b99c4e532364908d4ad42106"
     },
     "app/__init__.py": {
       "bytes": 84,
@@ -73,9 +81,13 @@
       "bytes": 9450,
       "sha256": "154c8b972d9aebc9bc45fa34c2394cb3a037201eedfa21096a30f57f66bcc6bb"
     },
+    "app/classplus_auth.py": {
+      "bytes": 12435,
+      "sha256": "c608812888fde6670b13b8aa17b393ddbf12761faf1a3fc93a4ef3f7679be687"
+    },
     "app/config.py": {
-      "bytes": 4050,
-      "sha256": "b8d917359799d0dd7823af804965102b507e79a0a25f22ccc38fe224209f8703"
+      "bytes": 4168,
+      "sha256": "3ee640dad147a0a0012e8788ef740cfb08c1002c7c4b167beb5e364b463facaa"
     },
     "app/conversation.py": {
       "bytes": 4083,
@@ -90,8 +102,8 @@
       "sha256": "99236a60a90a450688b661b2aa78b2e6dfdcae76cb3b31b3c8cb6df52d6bce8d"
     },
     "app/mtproto.py": {
-      "bytes": 11470,
-      "sha256": "9bdf9b1e223c93b79a7396a550d0d499f9a6ba3e3ff07928736e5e47bd02df0e"
+      "bytes": 11628,
+      "sha256": "b7e21acda5ec7716ad2af141ec33942efa5c33dcd3bea45f82e529846d371290"
     },
     "app/provider_common.py": {
       "bytes": 3703,
@@ -110,12 +122,12 @@
       "sha256": "ed8b1965000efb790ae18d89633b2ef16f836937cb6ef890e7d6fde1fadce39c"
     },
     "app/ui.py": {
-      "bytes": 12797,
-      "sha256": "857ebb453fdd2e876de04cc1481049b02e93fa3c3a0f4df2b7f9e5aa899eb297"
+      "bytes": 18020,
+      "sha256": "e7d08a4e88be3a90c68c1452a10328614d978185ac25e57045bf298732e48f97"
     },
     "app/web.py": {
-      "bytes": 27162,
-      "sha256": "53a7f94db9ea0dfef9caf7a9f02fb104524f8dd2ef7e72b29af892e456d3f532"
+      "bytes": 39197,
+      "sha256": "8aba8c9736ce925cbf7c56b845c7b7353f418cfb95744d98ec3f3a02d79268d9"
     },
     "render.yaml": {
       "bytes": 504,
@@ -133,9 +145,17 @@
       "bytes": 7805,
       "sha256": "10b60ab76386ebe1c0d65831f9128b48015d796cdd53dd77c8bdf17be5ea795f"
     },
+    "tests/test_controls_commands.py": {
+      "bytes": 8661,
+      "sha256": "14f563525fb287eeb193e2d96488544b688b6a409ab100d5a6cb49302015ea18"
+    },
     "tests/test_core.py": {
       "bytes": 13957,
       "sha256": "71ec1ee1645420d1b2ad9beeeda6b4d3086b5b261ad03dbec251d3a7c280fb7d"
+    },
+    "tests/test_login_otp.py": {
+      "bytes": 11851,
+      "sha256": "d4a3480e6ae03612a8ed5e3e2c5dda331b4f0180be96078b70f0fd6caabb4682"
     },
     "tests/test_mtproto.py": {
       "bytes": 10328,
@@ -150,8 +170,8 @@
       "sha256": "7273848060234337426fd48ea830b7e9a35d531fbd4308a8777d8d74f5a168ce"
     },
     "tests/test_upgrade.py": {
-      "bytes": 20007,
-      "sha256": "fcd95269a083d4ffbde4e7b5ebe1d75824ff4e67d4c69e2c98c7b8e408d70968"
+      "bytes": 20018,
+      "sha256": "6363e63383b2d29c8e4790fbf86ff9e722d1d9848013f297db1d04c4ea9fa0d9"
     }
   }
 }

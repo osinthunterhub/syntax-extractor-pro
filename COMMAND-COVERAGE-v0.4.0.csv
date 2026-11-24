@@ -1,0 +1,30 @@
+command,access,coverage,external_success_certified
+/start,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/dashboard,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/login,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/cplogin,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/cptoken,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/cpotp,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/classplus,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/connect,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/courses,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/refreshcourses,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/setdestination,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/destination,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/export,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/status,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/cancel,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/disconnect,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/logoutall,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/cleardestination,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/health,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/tools,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/guide,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/privacy,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/capabilities,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/support,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/free,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/appx,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/help,ordinary users,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/admin,owner-only,synthetic handler exercised; usage/disconnected/denial may be expected,no
+/stats,owner-only,synthetic handler exercised; usage/disconnected/denial may be expected,no

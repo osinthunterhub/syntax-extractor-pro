@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: independent-appx-classplus-extractor
+    name: syntax-extract-pro
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt

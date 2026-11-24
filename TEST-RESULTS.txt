@@ -1,7 +1,7 @@
-Syntax Extractor Pro v0.2.1-dev readiness patch
-Local Python3.13.18:86 passed in0.34s; app pyflakes clean.
-GitHub CI45344759182: Python3.12 and3.13 SUCCESS on3760b1a.
-Render3.12.12 build PASS; deployment LIVE (web process only).
-Remote /healthz200, /readyz503, webhook401 without secret,503 while unready.
-Telegram getMe429 persists; identity/webhook NOT verified.
-No real provider extraction/channel-delivery test.
+Syntax Extractor Pro v0.3.0-dev
+Local Python3.13: ........................................................................ [ 55%]
+..........................................................               [100%]
+130 passed in 0.27s
+Production app pyflakes: PASS (no findings).
+UI tests are mocked; no real provider/channel verification.
+CI/deployment release verification tracked separately.

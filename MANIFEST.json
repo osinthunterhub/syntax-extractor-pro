@@ -1,5 +1,5 @@
 {
-  "version": "0.2.1-dev",
+  "version": "0.3.0-dev",
   "files": {
     ".env.example": {
       "bytes": 492,
@@ -18,12 +18,12 @@
       "sha256": "f01d748a75eb195e6fd73201279bfb23f09036ddd360eb3e9ff40ef042acbc8a"
     },
     "DEPLOYMENT-STATUS.md": {
-      "bytes": 1769,
-      "sha256": "2498eb4fd6ec98f4261d8981201ebe97351ff5da2f7b8c7e1330a3dfad64146b"
+      "bytes": 722,
+      "sha256": "cc05f7d9611f6bf74db5c53806427a0c7f1e7d6647d240e376d71322ffdbe666"
     },
     "README.md": {
-      "bytes": 11174,
-      "sha256": "77e4405a03acc0121d3713566221887a32b2ab215d9a65f034f2d1d540f8fc27"
+      "bytes": 12573,
+      "sha256": "94e2dbc15521b786c51cac7d6fb657384498663205d62a3fb70496a04f6bea60"
     },
     "REFERENCE-COMMAND-INVENTORY.csv": {
       "bytes": 2894,
@@ -37,9 +37,13 @@
       "bytes": 2038,
       "sha256": "f61201f5abdc7fa916cbef2d487e558e63d5947054dd2624533474a30dbc2275"
     },
+    "SCREENSHOT-REFERENCE-CATALOG.csv": {
+      "bytes": 4304,
+      "sha256": "bac73f2eb9fdd5b9d9a546a2b0d7f536c8c580b612b33bc7c8feba73585ebc34"
+    },
     "TEST-RESULTS.txt": {
-      "bytes": 416,
-      "sha256": "54407a681dec34393bc0eee41b90a12a6fbfcd508118b905231099860e15a33a"
+      "bytes": 390,
+      "sha256": "4f8635acdadcba0da13a1fe07a536b471fc7b9a95020db11f218290118c9baf2"
     },
     "app/__init__.py": {
       "bytes": 84,
@@ -86,16 +90,20 @@
       "sha256": "521226b25aa51ecd6febfefa0e66bf17b5aa815acded0b40c5039b9f0398bfcf"
     },
     "app/telegram.py": {
-      "bytes": 4652,
-      "sha256": "303601d715193ce08f89e24529d09728079a2c480aa3e2dd1eec07d10a4a7f77"
+      "bytes": 5250,
+      "sha256": "ed8b1965000efb790ae18d89633b2ef16f836937cb6ef890e7d6fde1fadce39c"
+    },
+    "app/ui.py": {
+      "bytes": 12332,
+      "sha256": "cdc18fa0b359f705bbc1e675541ca5ded1d4ef23f947b22bc95fc57526b75fb7"
     },
     "app/web.py": {
-      "bytes": 19038,
-      "sha256": "877f2c4dd5edfdbe1016595cbbf5425ed2ae5e597863aaf37a79ceca8f59c97b"
+      "bytes": 20191,
+      "sha256": "93e282effdd2fe4a0582cafd3dbfcec2b4a0fc850a254d8eb752ebfe8883624e"
     },
     "render.yaml": {
-      "bytes": 522,
-      "sha256": "f7d9a6ddf51776790872fa0cfcab7c2828f7fa3f849772aaa9252461b5b32ef9"
+      "bytes": 504,
+      "sha256": "500fa7c6eee8e62a66ac86bb4273e2dd5f64d35c81fe43db9ade9d29eb280672"
     },
     "requirements-dev.txt": {
       "bytes": 34,
@@ -108,6 +116,10 @@
     "tests/test_core.py": {
       "bytes": 13957,
       "sha256": "71ec1ee1645420d1b2ad9beeeda6b4d3086b5b261ad03dbec251d3a7c280fb7d"
+    },
+    "tests/test_ui.py": {
+      "bytes": 8742,
+      "sha256": "7273848060234337426fd48ea830b7e9a35d531fbd4308a8777d8d74f5a168ce"
     },
     "tests/test_upgrade.py": {
       "bytes": 19948,

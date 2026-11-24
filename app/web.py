@@ -11,9 +11,14 @@ from .providers import AppX, Classplus, ProviderRouter, ProviderError, PublicRes
 from .destinations import Destinations
 from .jobs import Jobs
 from .telegram import Telegram, verified_identity
+from .ui import callback_command, render_panel, provider_panel
 
-HELP = '''Syntax Extractor Pro — v0.2.1-dev, mock-tested; live verification pending.
+HELP = '''Syntax Extractor Pro — v0.3.0-dev, mock-tested; live verification pending.
 AppX and Classplus have separate account connections.
+/start or /xtract — home
+/login — account panel
+/free — public-content availability (no source connected yet)
+/tools | /guide | /privacy | /capabilities | /support
 /appx — select AppX
 /classplus or /cp — select Classplus
 /connect appx API_HOST ACTUAL_USER_ID TOKEN
@@ -33,13 +38,18 @@ Connection map TTL: one hour. Job snapshots retained until stopped.
 Connection messages deleted best-effort. Keep signed-link files private.'''
 
 COMMANDS = [
-    ('start', 'Open extractor menu'), ('appx', 'Select AppX account'),
+    ('start', 'Open extractor home'), ('login', 'Open account access panel'),
+    ('free', 'Public content availability'), ('tools', 'Open tools and controls'),
+    ('appx', 'Select AppX account'),
     ('classplus', 'Select Classplus account'), ('connect', 'Connect your own authorized token'),
     ('courses', 'List selected account courses'), ('setdestination', 'Set your export channel'),
     ('destination', 'Show your selected channel'), ('export', 'Queue authorized course TXT export'),
     ('status', 'Check your current job'), ('cancel', 'Cancel your current job'),
     ('disconnect', 'Forget selected account'), ('logoutall', 'Forget all connected accounts'),
-    ('cleardestination', 'Forget channel and cancel job'), ('help', 'Show commands and limitations')]
+    ('cleardestination', 'Forget channel and cancel job'),
+    ('guide', 'Step-by-step export guide'), ('privacy', 'Read privacy and session limits'),
+    ('capabilities', 'See honest support coverage'), ('support', 'Contact support safely'),
+    ('help', 'Show commands and limitations')]
 
 class Bot:
     def __init__(self, config, tg, provider, bot_id=0):
@@ -69,15 +79,22 @@ class Bot:
         else:
             await self.tg.send(chat, text)
 
+    async def show_panel(self, chat, panel, message_id=None):
+        if hasattr(self.tg, 'panel'):
+            await self.tg.panel(chat, panel.text, panel.rows, message_id)
+        else:
+            await self.menu(chat, panel.text)
+
     async def handle(self, update):
         callback = update.get('callback_query')
         if isinstance(callback, dict):
             qid = callback.get('id')
             if isinstance(qid, str) and len(qid) <= 256:
-                await self.tg.call('answerCallbackQuery', {'callback_query_id': qid})
-            mapping = {'provider:appx': '/appx', 'provider:classplus': '/classplus', 'nav:courses': '/courses',
-                       'nav:destination': '/destination', 'nav:status': '/status', 'nav:help': '/help'}
-            command = mapping.get(callback.get('data'))
+                try:
+                    await self.tg.call('answerCallbackQuery', {'callback_query_id': qid})
+                except ProviderError:
+                    pass  # expired/rate-limited acknowledgement must not drop a local cancel action
+            command = callback_command(callback.get('data'))
             original = callback.get('message')
             if not command or not isinstance(original, dict):
                 return
@@ -98,6 +115,7 @@ class Bot:
             return
         parts = text.split()
         cmd = parts[0].split('@')[0].lower()
+        panel_message_id = message.get('message_id') if isinstance(callback, dict) else None
         if chat.get('type') != 'private' or uid != cid:
             if cmd == '/connect':
                 await self.tg.delete(cid, message.get('message_id'))
@@ -111,7 +129,7 @@ class Bot:
         lock = self.locks.setdefault(uid, asyncio.Lock())
         async with lock:
             now = time.monotonic()
-            cheap = {'/start', '/help', '/appx', '/classplus', '/cp', '/cancel', '/disconnect', '/logoutall', '/status', '/destination', '/cleardestination'}
+            cheap = {'/start', '/home', '/xtract', '/help', '/appx', '/classplus', '/cp', '/cancel', '/disconnect', '/logoutall', '/status', '/destination', '/cleardestination', '/panel', '/login', '/free', '/tools', '/support', '/guide', '/privacy', '/capabilities'}
             if cmd not in cheap and now - self.last.get(uid, 0) < 2:
                 await self.tg.send(cid, 'Please wait two seconds between API commands.')
                 return
@@ -119,17 +137,21 @@ class Bot:
                 self.last[uid] = now
             selected = self.selected.get(uid, 'appx')
             try:
-                if cmd in ('/start', '/help'):
+                if cmd in ('/start', '/home', '/xtract', '/login', '/free', '/tools', '/support', '/guide', '/privacy', '/capabilities', '/panel'):
+                    aliases = {'/start':'home','/home':'home','/xtract':'home','/login':'login','/free':'public','/tools':'tools',
+                               '/support':'support','/guide':'guide','/privacy':'privacy','/capabilities':'coverage'}
+                    try:
+                        panel = render_panel(parts[1:] if cmd == '/panel' else [aliases[cmd]])
+                    except ValueError:
+                        raise ProviderError('INVALID_MENU_SELECTION_USE_START') from None
+                    await self.show_panel(cid, panel, panel_message_id)
+                elif cmd == '/help':
                     await self.menu(cid, HELP)
                 elif cmd in ('/appx', '/classplus', '/cp'):
                     selected = 'appx' if cmd == '/appx' else 'classplus'
                     self.selected[uid] = selected
-                    title = 'AppX' if selected == 'appx' else 'Classplus'
-                    hint = '/connect appx API_HOST USER_ID TOKEN' if selected == 'appx' else '/connect classplus YOUR_OWN_TOKEN'
-                    if selected == 'appx' and not self.config.appx_hosts:
-                        await self.menu(cid, 'AppX selected. Operator setup pending: no approved coaching API host configured. Classplus remains separate. /classplus')
-                        return
-                    await self.menu(cid, f'{title} selected. Your other provider session is unchanged.\n{hint}\n/courses | /destination | /export COURSE_ID\nMock-tested adapter; real provider verification pending.')
+                    panel = provider_panel(selected, bool(self.config.appx_hosts), self.state.get(uid, selected) is not None)
+                    await self.show_panel(cid, panel, panel_message_id)
                 elif cmd == '/connect':
                     args = parts[1:]
                     if args and args[0].lower() in ('appx', 'classplus'):
@@ -251,7 +273,7 @@ def create_app(config, bot, runtime=None):
     runtime = runtime if runtime is not None else {'ready': True, 'identity_verified': False, 'webhook_configured': False, 'startup': 'test-harness'}
     app = web.Application(client_max_size=65536)
     async def health(request):
-        return web.json_response({'service': 'independent-extractor', 'version': '0.2.1-dev', 'status': 'process-alive', 'providers': {'appx': 'limited-test-mvp' if config.appx_hosts else 'disabled-no-approved-host', 'classplus': 'mock-tested-live-unverified'}, 'persistent_jobs': False, **runtime})
+        return web.json_response({'service': 'independent-extractor', 'version': '0.3.0-dev', 'status': 'process-alive', 'providers': {'appx': 'limited-test-mvp' if config.appx_hosts else 'disabled-no-approved-host', 'classplus': 'mock-tested-live-unverified'}, 'persistent_jobs': False, **runtime})
     async def ready(request):
         return web.json_response(dict(runtime), status=200 if runtime['ready'] else 503)
     async def webhook(request):

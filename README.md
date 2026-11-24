@@ -1,6 +1,6 @@
-# Independent Extractor — v0.2.1-dev
+# Independent Extractor — v0.3.0-dev
 
-**Separate new project. AppX + Classplus adapters. 86 local/mock tests. Web service deployed; Telegram activation blocked,
+**Separate new project. AppX + Classplus adapters. 130 local/mock tests. Web service deployed; Telegram activation blocked,
 not a claim of A–Z parity, real provider compatibility or fastest performance.**
 
 The existing `@TurboForwarderPro_Bot`, its credentials, sessions, settings and hosting
@@ -111,7 +111,7 @@ python -m pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
-86 tests pass under local Python 3.13. Production module Pyflakes check is clean.
+130 tests pass under local Python 3.13. Production module Pyflakes check is clean.
 GitHub CI passed for Python 3.12 + 3.13 (86-test revision, run 45344759182).
 Render Python 3.12.12 build and HTTP liveness/auth/readiness were verified.
 Telegram identity and provider APIs remain unverified. `TEST-RESULTS.txt` records actual local
@@ -176,3 +176,24 @@ unauthenticated webhook401, authenticated-unready webhook503 verified remotely.
 No further in-process retry loop. After external cooldown, one controlled restart
 will retry identity/bootstrap; no guarantee that Telegram accepts it.
 See DEPLOYMENT-STATUS.md for actual service/deploy/CI IDs.
+
+## v0.3 reference-inspired navigation upgrade
+
+- Home, Account Access, Public/Free availability, Tools, Support, Guide, Privacy,
+  Capabilities; `/xtract` and `/home` are home aliases.
+- AppX/Classplus selection, course/channel/status/cancel/logout controls preserved.
+- Callback panels edit the same message; expired edit can create one fresh panel.
+  Ambiguous network failures and429 are never retried as another send.
+- Five login-directory pages with49 distinct screenshot labels (RWA deduplicated),
+  two public-directory pages with16 labels. **These are research catalog entries,
+  NOT65 working providers.** Classplus has an existing mock-tested adapter; the
+  other named institute/version entries request no credentials and export nothing.
+- No guessed provider mappings, hosts or login-free premium/unlock features.
+- Support links to the user's supplied public handle @SyntaxError_2. It is NOT an
+  export destination. User-selected destination delivery remains separate.
+-130 local/mock tests. CI and deployment for this release are tracked separately.
+
+Reference public profile https://t.me/pro_extractorbot was fetched. Its interactive
+bot was NOT driven or authenticated into. Menu content came from the user's seven
+screenshots, not a claim of end-to-end reference-function verification. No copied
+branding/banner, embedded credentials or protected media API calls are included.

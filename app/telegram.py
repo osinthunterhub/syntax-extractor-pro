@@ -31,7 +31,7 @@ class Telegram:
         self.session, self._token = session, token
 
     async def call(self, method, payload=None, form=None):
-        if method not in {'getMe', 'sendMessage', 'sendDocument', 'deleteMessage', 'setWebhook', 'getChat', 'getChatMember', 'answerCallbackQuery', 'setMyCommands'}:
+        if method not in {'getMe', 'sendMessage', 'sendDocument', 'deleteMessage', 'setWebhook', 'getChat', 'getChatMember', 'answerCallbackQuery', 'setMyCommands', 'editMessageText'}:
             raise ProviderError('TELEGRAM_OPERATION_NOT_ALLOWED')
         try:
             # No access logging, no exception text, no token-bearing URLs in diagnostics.
@@ -53,6 +53,9 @@ class Telegram:
                     if not isinstance(retry, int) or isinstance(retry, bool) or retry < 1:
                         raise ProviderError('TELEGRAM_RATE_LIMITED_RETRY_LATER')
                     raise TelegramRateLimited(retry)
+                if (method == 'editMessageText' and response.status == 400
+                        and result.get('description') == 'Bad Request: message is not modified'):
+                    return True
                 if response.status != 200 or not result.get('ok'):
                     raise ProviderError(f'TELEGRAM_HTTP_{response.status}_REQUEST_REJECTED')
                 return result.get('result')
@@ -79,8 +82,20 @@ class Telegram:
         return await self.call('sendDocument', form=form)
 
     async def menu(self, chat, text):
-        keyboard = {'inline_keyboard': [
-            [{'text': '🔷 AppX', 'callback_data': 'provider:appx'}, {'text': '🟣 Classplus', 'callback_data': 'provider:classplus'}],
-            [{'text': '📚 My courses', 'callback_data': 'nav:courses'}, {'text': '📤 Destination', 'callback_data': 'nav:destination'}],
-            [{'text': '📊 Job status', 'callback_data': 'nav:status'}, {'text': '❔ Help', 'callback_data': 'nav:help'}]]}
-        return await self.call('sendMessage', {'chat_id': chat, 'text': text[:3900], 'reply_markup': keyboard})
+        from .ui import home_panel
+        return await self.panel(chat, text, home_panel().rows)
+
+    async def panel(self, chat, text, rows, message_id=None):
+        payload = {'chat_id': chat, 'text': text[:3900],
+                   'reply_markup': {'inline_keyboard': [list(row) for row in rows]},
+                   'link_preview_options': {'is_disabled': True}}
+        if isinstance(message_id, int) and not isinstance(message_id, bool) and message_id > 0:
+            payload['message_id'] = message_id
+            try:
+                return await self.call('editMessageText', payload)
+            except ProviderError as exc:
+                # A rejected/inaccessible edit may open a fresh panel; never retry timeouts/429.
+                if str(exc) != 'TELEGRAM_HTTP_400_REQUEST_REJECTED':
+                    raise
+                payload.pop('message_id', None)
+        return await self.call('sendMessage', payload)

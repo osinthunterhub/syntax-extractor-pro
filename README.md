@@ -70,7 +70,7 @@ Do not share files publicly unless you have permission to distribute the content
 
 ## Important limits / not yet production
 
-**No new GitHub repository, Render service or Telegram webhook has been created.**
+**Private repository created: osinthunterhub/syntax-extractor-pro. Render service creation is blocked on repository access; no webhook changed.**
 No real provider login, OTP, Telegram bot integration or course export was performed.
 The API protocols are reference-informed, not verified with provider developer docs.
 Search did not establish an authoritative public Classplus/AppX purchased-course API
@@ -112,11 +112,11 @@ python -m pytest -q
 ```
 
 74 tests pass under local Python 3.13. Production module Pyflakes check is clean.
-Included GitHub CI targets 3.12 + 3.13 but has NOT run. Python 3.12 deployment runtime,
+GitHub CI passed for Python 3.12 + 3.13 (run 45343096784). Python 3.12 hosted deployment runtime,
 Render build and live APIs remain unverified. `TEST-RESULTS.txt` records actual local
 results. All provider requests are mocked; local webhook HTTP tests run only locally.
 
-## Zero-cost NEW-account deployment template — not deployed
+## Zero-cost deployment template — Render access pending
 
 - New repository only. Upload extracted contents at repository root; never `.env`.
 - New Telegram bot only. Put secrets in the NEW Render service environment, not chat,

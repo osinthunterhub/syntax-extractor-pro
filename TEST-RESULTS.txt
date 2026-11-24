@@ -3,3 +3,4 @@ Python 3.13.18
 74 passed in 0.77s (local mock/local HTTP tests)
 Production pyflakes app: PASS
 Live provider APIs not tested. Hosted CI/deployment tracked separately.
+GitHub CI 45343096784: Python 3.12 SUCCESS; Python 3.13 SUCCESS.
